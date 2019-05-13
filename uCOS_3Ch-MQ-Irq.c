@@ -339,7 +339,7 @@ static void App_lsm303(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
         }
-        else OSTimeDly(OS_TIME_1mS);
+        else OSTimeDly(OS_TIME_10mS);
     }
 }
 static void App_bmp280(void * p_arg)
@@ -377,7 +377,7 @@ static void App_bmp280(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
-            else OSTimeDly(OS_TIME_1mS);
+            else OSTimeDly(OS_TIME_10mS);
 		}
 }
 static void App_ism330(void * p_arg)
@@ -415,7 +415,7 @@ static void App_ism330(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
-        else OSTimeDly(OS_TIME_1mS);
+        else OSTimeDly(OS_TIME_10mS);
 		}
 }
 

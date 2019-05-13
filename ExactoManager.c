@@ -17,6 +17,15 @@ extern ExactoLBIdata buffer;
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 
+uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
+{
+    if(src->cnt_lsm303 && src->cnt_bmp280 && src->cnt_ism330)   return 0;
+    src->cnt_lsm303 = 0;
+    src->cnt_bmp280 = 0;
+    src->cnt_ism330 = 0;
+    return 1;
+}
+
 uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst)
 {
     if(src->cnt_lsm303 && src->cnt_bmp280 && src->cnt_ism330)   return 0;
@@ -121,8 +130,6 @@ void        App_buffer(void * p_arg)
 {
     SensorData * ValInput;
 	uint8_t err;
-    
-	uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3];
     buffer.cnt_lsm303 = 0;
     buffer.cnt_bmp280 = 0;
     buffer.cnt_ism330 = 0;
@@ -141,16 +148,8 @@ void        App_buffer(void * p_arg)
                 SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
                 break;
         }
-        if(buffer.cnt_lsm303 && buffer.cnt_bmp280 && buffer.cnt_ism330)
+        if(ExactoLBIdataCLR(&buffer))
         {
-            for(uint8_t i = 0; i < buffer.cnt_lsm303; i++) ExactoLBIdata2send[i]                                            = buffer.lsm303[i];
-            for(uint8_t i = 0; i < buffer.cnt_bmp280; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303]                        = buffer.bmp280[i];
-            for(uint8_t i = 0; i < buffer.cnt_ism330; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303 + buffer.cnt_bmp280]    = buffer.ism330[i];
-            buffer.cnt_lsm303 = 0;
-            buffer.cnt_bmp280 = 0;
-            buffer.cnt_ism330 = 0;
-            SendStr((s8*)"hx");
-            SendStr((int8_t*)ExactoLBIdata2send);
             __NOP();
         }
     }

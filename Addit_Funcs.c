@@ -27,7 +27,7 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 		write_ism330(ISM330DLC_CTRL1_XL,0x44);
 		uint8_t ctrl1 = read_ism330(ISM330DLC_CTRL1_XL);
         // 0100 11 0 0
-    write_ism330(ISM330DLC_CTRL2_G,0x4c);
+        write_ism330(ISM330DLC_CTRL2_G,0x4c);
 		uint8_t ctrl2 = read_ism330(ISM330DLC_CTRL2_G);
 		OS_EXIT_CRITICAL()
 		if((ctrl1 == 0x44)&&(ctrl2 == 0x4c))
@@ -65,8 +65,7 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 	switch(mode)
 	{
 		case 0:
-			//0100 0100
-			
+		//0100 0100
 		OS_ENTER_CRITICAL()
 		write_lsm303ah(LSM303AH_CTRL1_A,0x44);
 		uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
