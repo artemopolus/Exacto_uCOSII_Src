@@ -144,14 +144,10 @@ void Exacto_safewrite_ism330(uint8_t RegAdr, uint8_t RegVal);
 uint8_t Exacto_sensor_read  (uint8_t TrgModule, uint8_t RegAdr, uint8_t * RegValue );
 uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegValue );
 
+uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst);
 
 
-//typedef struct {
-//    char Name[6];
-//    uint8_t Whoami;
-//    uint32_t Freq;
-//	uint8_t tstok;
-//}SensorParameters;
+
 
 
 void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uint8_t tdiscr)
@@ -259,15 +255,20 @@ static  void  App_TaskStart (void *p_arg)
     pMailStm32 = OSMboxCreate((void*)0);
   
   
-  OSTaskCreate((void (*)(void *)) App_Messager,  //  Создадим Задачу-Передатчик
+  OSTaskCreate((void (*)(void *)) App_Messager,  
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_Messager[APP_TASK_STK_SIZE - 1],
-               (INT8U           ) APP_TASK_SEND_PRIO   // Уровень приоритета для этой Задачи =11
+               (INT8U           ) APP_TASK_SEND_PRIO   
               );
-  OSTaskCreate((void (*)(void *)) App_stm32,  //  Создадим Задачу-Передатчик
+  OSTaskCreate((void (*)(void *)) App_stm32,  
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_stm32[APP_TASK_STK_SIZE - 1],
-               (INT8U           ) APP_TASK_STM32_PRIO   // Уровень приоритета для этой Задачи =11
+               (INT8U           ) APP_TASK_STM32_PRIO   
+              );
+  OSTaskCreate((void (*)(void *)) App_buffer,  
+               (void          * ) 0,
+               (OS_STK        * ) &Stk_App_buffer[APP_TASK_STK_SIZE - 1],
+               (INT8U           ) APP_TASK_BUFFER_PRIO   
               );
   OSTaskCreate((void (*)(void *)) App_UartRxBuffParser,        //  Создадим Задачу для измерения1
                (void          * ) 0,
@@ -424,18 +425,34 @@ static void App_Messager(void * p_arg)
 
     INT16U BaseDelay = OS_TICKS_PER_SEC;
     uint32_t CounterDelay = 0;
+    OS_FLAGS flags;
+    INT8U err;
+    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3];
 
     while(DEF_TRUE)
     {
-        Dec_Convert((s8*)cBuf, CounterDelay); 
         CounterDelay++;
+        flags = OSFlagQuery(pFlgSensors, &err);
+        if(flags)
+        {
+            if(ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send))
+            {
+                
+            }
+            else
+            {
+                SendStr((int8_t*)"No data in buffer\n");
+            }
+        }
+        else
+        {
+        Dec_Convert((s8*)cBuf, CounterDelay); 
+        
         SendStr((int8_t*)"Timer=");
         SendStr((int8_t*)&cBuf[6]);
         SendStr((int8_t*)"s\n");
         OSTimeDly(BaseDelay);
-			
-
-				
+        }
     }
 }
 static void App_UartRxBuffParser(void *p_arg)

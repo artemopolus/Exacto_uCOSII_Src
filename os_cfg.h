@@ -76,7 +76,7 @@
 #define OS_FLAG_ACCEPT_EN         0    /*     Include code for OSFlagAccept()                          */
 #define OS_FLAG_DEL_EN            0    /*     Include code for OSFlagDel()                             */
 #define OS_FLAG_NAME_SIZE         2    /*     Determine the size of the name of an event flag group    */
-#define OS_FLAG_QUERY_EN          0    /*     Include code for OSFlagQuery()                           */
+#define OS_FLAG_QUERY_EN          1    /*     Include code for OSFlagQuery()                           */
 #define OS_FLAG_WAIT_CLR_EN       0    /* Include code for Wait on Clear EVENT FLAGS                   */
 #define OS_FLAGS_NBITS            8    /* Size in #bits of OS_FLAGS data type (8, 16 or 32)            */
 
