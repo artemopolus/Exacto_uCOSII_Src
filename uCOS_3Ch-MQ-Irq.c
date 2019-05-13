@@ -241,7 +241,7 @@ static  void  App_TaskStart (void *p_arg)
     setInitExactoSensorSet(&bmp280,"bmp280",FLG_BMP280,OS_TIME_10mS);
     setInitExactoSensorSet(&ism330,"ism330",FLG_ISM330,OS_TIME_10mS);
 	
-		SetInitExactoStm32States();
+	SetInitExactoStm32States();
 
 
 
@@ -339,7 +339,7 @@ static void App_lsm303(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
         }
-        else OSTimeDly(OS_TIME_10mS);
+        else OSTimeDly(OS_TIME_1mS);
     }
 }
 static void App_bmp280(void * p_arg)
@@ -377,7 +377,7 @@ static void App_bmp280(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
-            else OSTimeDly(OS_TIME_10mS);
+            else OSTimeDly(OS_TIME_1mS);
 		}
 }
 static void App_ism330(void * p_arg)
@@ -415,7 +415,7 @@ static void App_ism330(void * p_arg)
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
-        else OSTimeDly(OS_TIME_10mS);
+        else OSTimeDly(OS_TIME_1mS);
 		}
 }
 
