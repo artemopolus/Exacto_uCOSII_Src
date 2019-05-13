@@ -427,17 +427,21 @@ static void App_Messager(void * p_arg)
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
     INT8U err;
-    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3];
-
+    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
+    uint8_t Cnt_ExactoLBIdata2send = 0;
     while(DEF_TRUE)
     {
         CounterDelay++;
         flags = OSFlagQuery(pFlgSensors, &err);
         if(flags)
         {
-            if(ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send))
+            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send);
+            if(Cnt_ExactoLBIdata2send)
             {
-                
+                ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
+                SendStr((int8_t*)"h");
+                SendStr((s8*)ExactoLBIdata2send);
+                SendStr((int8_t*)"\n");
             }
             else
             {
@@ -446,12 +450,11 @@ static void App_Messager(void * p_arg)
         }
         else
         {
-        Dec_Convert((s8*)cBuf, CounterDelay); 
-        
-        SendStr((int8_t*)"Timer=");
-        SendStr((int8_t*)&cBuf[6]);
-        SendStr((int8_t*)"s\n");
-        OSTimeDly(BaseDelay);
+            Dec_Convert((s8*)cBuf, CounterDelay); 
+            SendStr((int8_t*)"Timer=");
+            SendStr((int8_t*)&cBuf[6]);
+            SendStr((int8_t*)"s\n");
+            OSTimeDly(BaseDelay);
         }
     }
 }

@@ -29,13 +29,16 @@ uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
 uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst)
 {
     if(src->cnt_lsm303 && src->cnt_bmp280 && src->cnt_ism330)   return 0;
-    for(uint8_t i = 0; i < src->cnt_lsm303; i++) dst[i]                                        = src->lsm303[i];
-    for(uint8_t i = 0; i < src->cnt_bmp280; i++) dst[i + src->cnt_lsm303]                      = src->bmp280[i];
-    for(uint8_t i = 0; i < src->cnt_ism330; i++) dst[i + src->cnt_lsm303 + src->cnt_bmp280]    = src->ism330[i];
+    dst[0] = src->cnt_lsm303;
+    dst[1] = src->cnt_bmp280;
+    dst[2] = src->cnt_ism330;
+    for(uint8_t i = 0; i < src->cnt_lsm303; i++) dst[i + 3]                                        = src->lsm303[i];
+    for(uint8_t i = 0; i < src->cnt_bmp280; i++) dst[i + 3 + src->cnt_lsm303]                      = src->bmp280[i];
+    for(uint8_t i = 0; i < src->cnt_ism330; i++) dst[i + 3 + src->cnt_lsm303 + src->cnt_bmp280]    = src->ism330[i];
     src->cnt_lsm303 = 0;
     src->cnt_bmp280 = 0;
     src->cnt_ism330 = 0;
-    return 1;
+    return (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
 }
 
 void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
