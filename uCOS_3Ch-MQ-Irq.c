@@ -487,11 +487,11 @@ static void App_UartRxBuffParser(void *p_arg)
         pshfrc_exbu8(&UartRxBuffer,UartRxValue);
         if(grball_exbu8(&UartRxBuffer, pData))
         {
-        pData[getlen_exbu8(&UartRxBuffer)+ 1] = '\0';
+        //pData[getlen_exbu8(&UartRxBuffer)+ 1] = '\0';
 
     #ifdef ECHO_ALL
         SendStr((int8_t*)"Get Data:");
-        SendStr((int8_t*)pData);
+        SendStr((int8_t*)&pData[0]);
     #endif
         }
         int pointer2cmd = checkCmdType((char*)pData, getlen_exbu8(&UartRxBuffer));
