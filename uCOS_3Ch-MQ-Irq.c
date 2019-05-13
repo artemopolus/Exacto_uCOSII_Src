@@ -33,17 +33,18 @@
 //  На базе этих массивов будут созданы стеки Задач 
 OS_STK         App_TaskStartStk[APP_TASK_STK_SIZE];
 
-OS_STK         App_TaskMeas1Stk[APP_TASK_STK_SIZE];   //  Стек измерителя1
-OS_STK         App_TaskMeas2Stk[APP_TASK_STK_SIZE];   //  Стек измерителя2
-OS_STK         App_TaskMeas3Stk[APP_TASK_STK_SIZE];   //  Стек измерителя3
+//OS_STK         App_TaskMeas1Stk[APP_TASK_STK_SIZE];   //  Стек измерителя1
+//OS_STK         App_TaskMeas2Stk[APP_TASK_STK_SIZE];   //  Стек измерителя2
+//OS_STK         App_TaskMeas3Stk[APP_TASK_STK_SIZE];   //  Стек измерителя3
 
-OS_STK         App_TaskSendStk[APP_TASK_STK_SIZE];    //  Стек передатчика 
+//OS_STK         App_TaskSendStk[APP_TASK_STK_SIZE];    //  Стек передатчика 
 extern      CPU_FNCT_VOID BSP_IntVectTbl[];           //  для отладки
 
 //  Объявления функций, на базе которых в программе будут созданы Задачи
 //  Определения этих функций смотрите далее в этом файле 
 static  void  App_TaskStart    (void *p_arg);
 
+ExactoLBIdata buffer;
 
 const uint8_t CntExactoStm32States =   10;
 uint8_t * ExactoStm32States;
@@ -77,6 +78,9 @@ static void App_UartRxBuffParser(void *p_arg);
 
 OS_STK  Stk_App_stm32[APP_TASK_STK_SIZE];
 void App_stm32(void * p_arg);
+
+OS_STK  Stk_App_buffer[APP_TASK_STK_SIZE];
+void        App_buffer(void * p_arg);
 
 unsigned char cTicks;   //  Служебная для наблюдения "тиков"
 u8 ucSend=0, ucSend1=0, ucSend2=0;  //  Длит.передачи в UART
@@ -148,15 +152,7 @@ uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegVa
 //    uint32_t Freq;
 //	uint8_t tstok;
 //}SensorParameters;
-void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
-{
-    for(uint8_t i = 0; i < 6; i++) dst[*ptr + i] = src[i] ;
-    * ptr += 6;
-    if(* ptr >= EXACTOLBIDATASIZE)
-    {
-        * ptr = 0;
-    }
-}
+
 
 void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uint8_t tdiscr)
 {
@@ -425,55 +421,19 @@ static void App_ism330(void * p_arg)
 
 static void App_Messager(void * p_arg)
 {
-	#ifdef PING_MODE
+
     INT16U BaseDelay = OS_TICKS_PER_SEC;
     uint32_t CounterDelay = 0;
-	#else	
-		SensorData * ValInput;
-		uint8_t err;
-    ExactoLBIdata buffer;
-		uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3];
-    buffer.cnt_lsm303 = 0;
-    buffer.cnt_bmp280 = 0;
-    buffer.cnt_ism330 = 0;
-	#endif
+
     while(DEF_TRUE)
     {
-			#ifdef PING_MODE
         Dec_Convert((s8*)cBuf, CounterDelay); 
         CounterDelay++;
         SendStr((int8_t*)"Timer=");
         SendStr((int8_t*)&cBuf[6]);
         SendStr((int8_t*)"s\n");
         OSTimeDly(BaseDelay);
-			#else
-		ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
-        switch(ValInput->pSensor)
-        {
-            case FLG_LSM303:
-                SetData2exactoLBIdata(ValInput->s1, buffer.lsm303, &buffer.cnt_lsm303);
-                break;
-            case FLG_BMP280:
-                SetData2exactoLBIdata(ValInput->s1, buffer.bmp280, &buffer.cnt_bmp280);
-                break;
-            case FLG_ISM330:
-                SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
-                break;
-        }
-				if(buffer.cnt_lsm303 && buffer.cnt_bmp280 && buffer.cnt_ism330)
-				{
-					for(uint8_t i = 0; i < buffer.cnt_lsm303; i++) ExactoLBIdata2send[i]                                            = buffer.lsm303[i];
-					for(uint8_t i = 0; i < buffer.cnt_bmp280; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303]                        = buffer.bmp280[i];
-					for(uint8_t i = 0; i < buffer.cnt_ism330; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303 + buffer.cnt_bmp280]    = buffer.ism330[i];
-					buffer.cnt_lsm303 = 0;
-					buffer.cnt_bmp280 = 0;
-					buffer.cnt_ism330 = 0;
-					SendStr((s8*)"hx");
-					SendStr((int8_t*)ExactoLBIdata2send);
-					__NOP();
-				}
-				
-			#endif
+			
 
 				
     }

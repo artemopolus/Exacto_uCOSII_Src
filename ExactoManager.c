@@ -10,10 +10,22 @@ extern s8* Dec_Convert(s8* buf, s32 value);
 extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
+extern OS_EVENT * pEvSensorBuff;
+extern ExactoLBIdata buffer;
 
 #define CNTSTATES   10
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
+
+void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
+{
+    for(uint8_t i = 0; i < 6; i++) dst[*ptr + i] = src[i] ;
+    * ptr += 6;
+    if(* ptr >= EXACTOLBIDATASIZE)
+    {
+        * ptr = 0;
+    }
+}
 
 
 void App_stm32(void * p_arg)
@@ -91,5 +103,43 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             break;
         case SENDFREQ_ES32A:
             break;
+    }
+}
+void        App_buffer(void * p_arg)
+{
+    SensorData * ValInput;
+	uint8_t err;
+    
+	uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3];
+    buffer.cnt_lsm303 = 0;
+    buffer.cnt_bmp280 = 0;
+    buffer.cnt_ism330 = 0;
+    while(DEF_TRUE)
+    {
+        ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
+        switch(ValInput->pSensor)
+        {
+            case FLG_LSM303:
+                SetData2exactoLBIdata(ValInput->s1, buffer.lsm303, &buffer.cnt_lsm303);
+                break;
+            case FLG_BMP280:
+                SetData2exactoLBIdata(ValInput->s1, buffer.bmp280, &buffer.cnt_bmp280);
+                break;
+            case FLG_ISM330:
+                SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
+                break;
+        }
+        if(buffer.cnt_lsm303 && buffer.cnt_bmp280 && buffer.cnt_ism330)
+        {
+            for(uint8_t i = 0; i < buffer.cnt_lsm303; i++) ExactoLBIdata2send[i]                                            = buffer.lsm303[i];
+            for(uint8_t i = 0; i < buffer.cnt_bmp280; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303]                        = buffer.bmp280[i];
+            for(uint8_t i = 0; i < buffer.cnt_ism330; i++) ExactoLBIdata2send[i + buffer.cnt_lsm303 + buffer.cnt_bmp280]    = buffer.ism330[i];
+            buffer.cnt_lsm303 = 0;
+            buffer.cnt_bmp280 = 0;
+            buffer.cnt_ism330 = 0;
+            SendStr((s8*)"hx");
+            SendStr((int8_t*)ExactoLBIdata2send);
+            __NOP();
+        }
     }
 }
