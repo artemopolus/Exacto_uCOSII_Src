@@ -569,13 +569,6 @@ static void App_UartRxBuffParser(void *p_arg)
             }
         }
         
-
-    #ifdef ECHO_ALL
-        SendStr((int8_t*)"\nAfter:");
-        getmas_exbu8(&UartRxBuffer, pData);
-        SendStr((int8_t*)pData);
-    #endif
-        
         SendStr((int8_t*)"\n");
     }
 }
