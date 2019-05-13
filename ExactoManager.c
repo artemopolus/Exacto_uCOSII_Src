@@ -110,18 +110,21 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
 													FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
 													OS_FLAG_CLR,
 													perr);
+							SendStr((int8_t*)"Switch to mode: waiting\n");
 							break;
 						case ONLYLSM303_ESM:
 							OSFlagPost( pFlgSensors,
 													FLG_LSM303,
 													OS_FLAG_SET,
 													perr);
+						SendStr((int8_t*)"Switch to mode: only lsm303\n");
 							break;
 						case ALLRUNNING_ESM:
 							OSFlagPost( pFlgSensors,
 													FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
 													OS_FLAG_SET,
 													perr);
+							SendStr((int8_t*)"Switch to mode: all sensors\n");
 							break;
 					}
             break;
