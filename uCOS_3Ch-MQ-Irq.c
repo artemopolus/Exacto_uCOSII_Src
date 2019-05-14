@@ -159,17 +159,23 @@ void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uin
 }
 void FlagPostError_Callback(uint8_t src, OS_FLAGS flag)
 {
-    switch(src)
+    if(flag == OS_ERR_NONE)
     {
-        case FLG_LSM303:
-            __NOP();
-            break; 
-        case FLG_BMP280:
-            __NOP();
-            break; 
-        case FLG_ISM330:
-            __NOP();
-            break; 
+        switch(src)
+        {
+            case FLG_LSM303:
+                SendStr((int8_t*)"FLGERR:lsm303:");
+                __NOP();
+                break; 
+            case FLG_BMP280:
+                SendStr((int8_t*)"FLGERR:bmp280:");
+                __NOP();
+                break; 
+            case FLG_ISM330:
+                SendStr((int8_t*)"FLGERR:ism330:");
+                __NOP();
+                break; 
+        }
     }
     switch(flag)
     {
@@ -178,21 +184,27 @@ void FlagPostError_Callback(uint8_t src, OS_FLAGS flag)
             break;            
         case OS_ERR_PEND_ISR :
             __NOP();
+            SendStr((int8_t*)"OS_ERR_PEND_ISR\n");
             break; 
         case OS_ERR_FLAG_INVALID_PGRP:
             __NOP();
+            SendStr((int8_t*)"OS_ERR_FLAG_INVALID_PGRP\n");
             break; 
         case OS_ERR_EVENT_TYPE:
             __NOP();
+            SendStr((int8_t*)"OS_ERR_EVENT_TYPE\n");
             break; 
         case OS_ERR_TIMEOUT:
             __NOP();
+            SendStr((int8_t*)"OS_ERR_TIMEOUT\n");
             break; 
         case OS_ERR_PEND_ABORT: 
             __NOP();
+            SendStr((int8_t*)"OS_ERR_PEND_ABORT\n");
             break;             
         case OS_ERR_FLAG_WAIT_TYPE:
             __NOP();
+            SendStr((int8_t*)"OS_ERR_FLAG_WAIT_TYPE\n");
             break; 
     }
 }
@@ -313,31 +325,34 @@ static void App_lsm303(void * p_arg)
     strcpy(Parameters->Name,"lsm330");
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
-		if(!Exacto_setfrq_lsm303ah(0))
-		{
-			__NOP();
-		}
-        uint8_t ready = 0;
+    if(!Exacto_setfrq_lsm303ah(0))
+    {
+        __NOP();
+        SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
+    }
+    uint8_t ready = 0;
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
         FlagPostError_Callback(FLG_LSM303, flValue);
         OS_ENTER_CRITICAL()
-				ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
+		ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
         OS_EXIT_CRITICAL()
         if(ready)
         {
-				if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
-                {
-                    __NOP();
-                }
-                OSQQuery(pEvSensorBuff, &infSensorBuff);
-                cntSensorBuff = infSensorBuff.OSNMsgs;
-                if(CNTSENSORBUFFER==cntSensorBuff)
-                {
-                    __NOP();
-                }
-                OSTimeDly(Parameters->TDiscr);
+            if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
+            {
+                __NOP();
+                SendStr((int8_t*)"OS_Q_FULL:lsm303\n");
+            }
+            OSQQuery(pEvSensorBuff, &infSensorBuff);
+            cntSensorBuff = infSensorBuff.OSNMsgs;
+            if(CNTSENSORBUFFER==cntSensorBuff)
+            {
+                __NOP();
+                SendStr((int8_t*)"OS_Q_CNTWRN:lsm303\n");
+            }
+            OSTimeDly(Parameters->TDiscr);
         }
         else OSTimeDly(OS_TIME_1mS);
     }
@@ -348,12 +363,13 @@ static void App_bmp280(void * p_arg)
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
     OS_FLAGS flValue;
-		SensorData Val_bmp280;
-		Parameters->Whoami = Exacto_init_bmp280();
+    SensorData Val_bmp280;
+    Parameters->Whoami = Exacto_init_bmp280();
     Val_bmp280.pSensor = FLG_BMP280;
     if(!Exacto_setfrq_bmp280(0))
     {
         __NOP();
+        SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
     }
     uint8_t ready = 0;
 		while(DEF_TRUE)
@@ -368,12 +384,14 @@ static void App_bmp280(void * p_arg)
 				if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
                 {
                     __NOP();
+                    SendStr((int8_t*)"OS_Q_FULL:bmp280\n");
                 }
                 OSQQuery(pEvSensorBuff, &infSensorBuff);
                 cntSensorBuff = infSensorBuff.OSNMsgs;
                 if(CNTSENSORBUFFER==cntSensorBuff)
                 {
                     __NOP();
+                    SendStr((int8_t*)"OS_Q_CNTWRN:bmp280\n");
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
@@ -387,12 +405,13 @@ static void App_ism330(void * p_arg)
     uint8_t error;
     uint8_t ready = 0;
     OS_FLAGS flValue;
-		SensorData  Val_ism330;
-		Parameters->Whoami = Exacto_init_ism330();
+    SensorData  Val_ism330;
+    Parameters->Whoami = Exacto_init_ism330();
     Val_ism330.pSensor = FLG_ISM330;
     if(!Exacto_setfrq_ism330(0))
     {
         __NOP();
+        SendStr((int8_t*)"ERRSET:ism330 set freq\n");
     }
 		while(DEF_TRUE)
 		{
@@ -406,12 +425,14 @@ static void App_ism330(void * p_arg)
 				if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
                 {
                     __NOP();
+                    SendStr((int8_t*)"OS_Q_FULL:ism330\n");
                 }
                 OSQQuery(pEvSensorBuff, &infSensorBuff);
                 cntSensorBuff = infSensorBuff.OSNMsgs;
                 if(CNTSENSORBUFFER==cntSensorBuff)
                 {
                     __NOP();
+                    SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
                 }
                 OSTimeDly(Parameters->TDiscr);
             }
@@ -433,6 +454,17 @@ static void App_Messager(void * p_arg)
     {
         CounterDelay++;
         flags = OSFlagQuery(pFlgSensors, &err);
+        switch(err)
+        {
+            case OS_ERR_NONE:
+                break;
+            case OS_ERR_FLAG_INVALID_PGRP:
+                SendStr((int8_t*)"APP_MSG:OS_ERR_FLAG_INVALID_PGRP\n");
+                break;
+            case OS_ERR_EVENT_TYPE:
+                SendStr((int8_t*)"APP_MSG:OS_ERR_EVENT_TYPE\n");
+                break;
+        }
         if(flags)
         {
             Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send);
@@ -477,12 +509,24 @@ static void App_UartRxBuffParser(void *p_arg)
         UartRxValue=(int8_t)OSQPend(pEvUartRxBuff,0,&error);
 			switch(error)
 			{
-				case OS_ERR_EVENT_TYPE:
-					__NOP();
-					break;
 				case OS_ERR_TIMEOUT:
-					__NOP();
-				break;
+                    SendStr((int8_t*)"UART_RX:OS_ERR_TIMEOUT\n");
+					break;
+				case OS_ERR_PEND_ABORT:
+                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ABORT\n");
+					break;
+                case OS_ERR_EVENT_TYPE:
+                    SendStr((int8_t*)"UART_RX:OS_ERR_EVENT_TYPE\n");
+					break;
+                case OS_ERR_PEVENT_NULL:
+                    SendStr((int8_t*)"UART_RX:OS_ERR_PEVENT_NULL\n");
+					break;
+                case OS_ERR_PEND_ISR:
+                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ISR\n");
+					break;
+                case OS_ERR_PEND_LOCKED:
+                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_LOCKED\n");
+					break;
 			}
         pshfrc_exbu8(&UartRxBuffer,UartRxValue);
         if(grball_exbu8(&UartRxBuffer, pData))
@@ -497,32 +541,38 @@ static void App_UartRxBuffParser(void *p_arg)
         int pointer2cmd = checkCmdType((char*)pData, getlen_exbu8(&UartRxBuffer));
         if(pointer2cmd != -1)
         {
-            switch( getDataCmd((char*)(pData + pointer2cmd), & TrgSens, & RegAdr, & RegVal ))
+            uint8_t flgchck = getDataCmd((char*)(pData + pointer2cmd), & TrgSens, & RegAdr, & RegVal );
+            clrsvr_exbu8(&UartRxBuffer, 8);
+            #ifdef ECHO_ALL
+            SendStr((int8_t*)"Clr Data:");
+            SendStr((int8_t*)&pData[0]);
+            #endif
+            switch( flgchck)
             {
                 case 1:
-										if(TrgSens == 0)
-										{
-											SendStr((int8_t*)"\nExAdr=");
-											Dec_Convert((s8*)cBuf, RegAdr);
-											SendStr((s8*)&cBuf[6]);
-											SendStr((int8_t*)"value=");
-											Dec_Convert((s8*)cBuf, ExactoStm32States[RegAdr]);
-											SendStr((s8*)&cBuf[6]);
-										}
-										else
-										{
-											SendStr((int8_t*)"\nRead value:");
-											if(Exacto_sensor_read(TrgSens,RegAdr,&SensVal))
-												{
-														Dec_Convert((s8*)cBuf, SensVal); 
-														SendStr((s8*)&cBuf[6]);
-														setclr_exbu8(&UartRxBuffer,(pointer2cmd + 4));
-												}
-												else
-												{
-														SendStr((int8_t*)"can't read");
-												}
-										}
+                    if(TrgSens == 0)
+                    {
+                        SendStr((int8_t*)"\nExAdr=");
+                        Dec_Convert((s8*)cBuf, RegAdr);
+                        SendStr((s8*)&cBuf[6]);
+                        SendStr((int8_t*)"value=");
+                        Dec_Convert((s8*)cBuf, ExactoStm32States[RegAdr]);
+                        SendStr((s8*)&cBuf[6]);
+                    }
+                    else
+                    {
+                        SendStr((int8_t*)"\nRead value:");
+                        if(Exacto_sensor_read(TrgSens,RegAdr,&SensVal))
+                            {
+                                    Dec_Convert((s8*)cBuf, SensVal); 
+                                    SendStr((s8*)&cBuf[6]);
+                                    setclr_exbu8(&UartRxBuffer,(pointer2cmd + 4));
+                            }
+                            else
+                            {
+                                    SendStr((int8_t*)"can't read");
+                            }
+                    }
                     break;
                 case 2:
                     if(TrgSens == 0)
@@ -541,7 +591,7 @@ static void App_UartRxBuffParser(void *p_arg)
                         }
                     }
                     else
-										{
+					{
                         SendStr((int8_t*)"\nWrite value:");
                         if(Exacto_sensor_write(TrgSens,RegAdr,RegVal))
                         {
@@ -553,11 +603,12 @@ static void App_UartRxBuffParser(void *p_arg)
                         {
                             SendStr((int8_t*)"can't write");
                         }
-										}
+					}
                     break;
                 case 0:
                     break;
             }
+            
         }
         else
         {

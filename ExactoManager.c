@@ -59,39 +59,58 @@ void App_stm32(void * p_arg)
     CmdToStm32 *msg;
     while(DEF_TRUE)
     {
-        msg = (CmdToStm32*)OSMboxPend(pMailStm32, 0, &err);
-        if(msg->adr < CntExactoStm32States)
-        {
-            if(msg->actiontype)
-            {
-                SendStr((int8_t*)"Write stm32 states:\n");
-                Dec_Convert((s8*)cBuf, msg->adr);
-                SendStr((int8_t*)"adr=");
-                SendStr((int8_t*)&cBuf[3]);
-                SendStr((int8_t*)"\n");
-                Dec_Convert((s8*)cBuf, msg->val);
-                SendStr((int8_t*)"value=");
-                SendStr((int8_t*)&cBuf[3]);
-                SendStr((int8_t*)"\n");
-                ExactoStm32StatesChanged_Callback(msg->adr,msg->val,&ferr);
-            }
-            else
-            {
-                SendStr((int8_t*)"Read stm32 states:\n");
-                Dec_Convert((s8*)cBuf, msg->adr);
-                SendStr((int8_t*)"adr=");
-                SendStr((int8_t*)&cBuf[3]);
-                SendStr((int8_t*)"\n");
-                Dec_Convert((s8*)cBuf, ExactoStm32States[msg->adr]);
-                SendStr((int8_t*)"value=");
-                SendStr((int8_t*)&cBuf[3]);
-                SendStr((int8_t*)"\n");
-            }
-        }
+        msg = (CmdToStm32*)OSMboxPend(pMailStm32, 0, &err);    
         if (err == OS_ERR_NONE) {
-        /* Code for received message */
+            if(msg->adr < CntExactoStm32States)
+            {
+                if(msg->actiontype)
+                {
+                    SendStr((int8_t*)"Write stm32 states:\n");
+                    Dec_Convert((s8*)cBuf, msg->adr);
+                    SendStr((int8_t*)"adr=");
+                    SendStr((int8_t*)&cBuf[3]);
+                    SendStr((int8_t*)"\n");
+                    Dec_Convert((s8*)cBuf, msg->val);
+                    SendStr((int8_t*)"value=");
+                    SendStr((int8_t*)&cBuf[3]);
+                    SendStr((int8_t*)"\n");
+                    ExactoStm32StatesChanged_Callback(msg->adr,msg->val,&ferr);
+                }
+                else
+                {
+                    SendStr((int8_t*)"Read stm32 states:\n");
+                    Dec_Convert((s8*)cBuf, msg->adr);
+                    SendStr((int8_t*)"adr=");
+                    SendStr((int8_t*)&cBuf[3]);
+                    SendStr((int8_t*)"\n");
+                    Dec_Convert((s8*)cBuf, ExactoStm32States[msg->adr]);
+                    SendStr((int8_t*)"value=");
+                    SendStr((int8_t*)&cBuf[3]);
+                    SendStr((int8_t*)"\n");
+                }
+            }
         } else {
-        /* Code for message not received within timeout */
+            switch(err)
+			{
+				case OS_ERR_TIMEOUT:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_TIMEOUT\n");
+					break;
+				case OS_ERR_PEND_ABORT:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_PEND_ABORT\n");
+					break;
+                case OS_ERR_EVENT_TYPE:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_EVENT_TYPE\n");
+					break;
+                case OS_ERR_PEND_ISR:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_PEND_ISR\n");
+					break;
+                case OS_ERR_PEVENT_NULL:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_PEVENT_NULL\n");
+					break;
+                case OS_ERR_PEND_LOCKED:
+                    SendStr((int8_t*)"AP_STM32:OS_ERR_PEND_LOCKED\n");
+					break;
+			}
         }
     }
 }
@@ -103,30 +122,30 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
     switch (RegAdr)
     {
         case READSENSMODE_ES32A:
-					switch(RegVal)
-					{
-						case ALLWAITING_ESM:
-							OSFlagPost( pFlgSensors,
-													FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
-													OS_FLAG_CLR,
-													perr);
-							SendStr((int8_t*)"Switch to mode: waiting\n");
-							break;
-						case ONLYLSM303_ESM:
-							OSFlagPost( pFlgSensors,
-													FLG_LSM303,
-													OS_FLAG_SET,
-													perr);
-						SendStr((int8_t*)"Switch to mode: only lsm303\n");
-							break;
-						case ALLRUNNING_ESM:
-							OSFlagPost( pFlgSensors,
-													FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
-													OS_FLAG_SET,
-													perr);
-							SendStr((int8_t*)"Switch to mode: all sensors\n");
-							break;
-					}
+            switch(RegVal)
+            {
+                case ALLWAITING_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+                                            OS_FLAG_CLR,
+                                            perr);
+                    SendStr((int8_t*)"Switch to mode: waiting\n");
+                    break;
+                case ONLYLSM303_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_LSM303,
+                                            OS_FLAG_SET,
+                                            perr);
+                SendStr((int8_t*)"Switch to mode: only lsm303\n");
+                    break;
+                case ALLRUNNING_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+                                            OS_FLAG_SET,
+                                            perr);
+                    SendStr((int8_t*)"Switch to mode: all sensors\n");
+                    break;
+            }
             break;
         case SENDFREQ_ES32A:
             break;
@@ -142,21 +161,48 @@ void        App_buffer(void * p_arg)
     while(DEF_TRUE)
     {
         ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
-        switch(ValInput->pSensor)
+        if(err == OS_ERR_NONE)
         {
-            case FLG_LSM303:
-                SetData2exactoLBIdata(ValInput->s1, buffer.lsm303, &buffer.cnt_lsm303);
-                break;
-            case FLG_BMP280:
-                SetData2exactoLBIdata(ValInput->s1, buffer.bmp280, &buffer.cnt_bmp280);
-                break;
-            case FLG_ISM330:
-                SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
-                break;
+            switch(ValInput->pSensor)
+            {
+                case FLG_LSM303:
+                    SetData2exactoLBIdata(ValInput->s1, buffer.lsm303, &buffer.cnt_lsm303);
+                    break;
+                case FLG_BMP280:
+                    SetData2exactoLBIdata(ValInput->s1, buffer.bmp280, &buffer.cnt_bmp280);
+                    break;
+                case FLG_ISM330:
+                    SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
+                    break;
+            }
         }
-        if(ExactoLBIdataCLR(&buffer))
+        else
         {
-            __NOP();
+            switch(err)
+			{
+				case OS_ERR_TIMEOUT:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_TIMEOUT\n");
+					break;
+				case OS_ERR_PEND_ABORT:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ABORT\n");
+					break;
+                case OS_ERR_EVENT_TYPE:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_EVENT_TYPE\n");
+					break;
+                case OS_ERR_PEVENT_NULL:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEVENT_NULL\n");
+					break;
+                case OS_ERR_PEND_ISR:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ISR\n");
+					break;
+                case OS_ERR_PEND_LOCKED:
+                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_LOCKED\n");
+					break;
+			}
         }
+//        if(ExactoLBIdataCLR(&buffer))
+//        {
+//            __NOP();
+//        }
     }
 }
