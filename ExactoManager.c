@@ -17,9 +17,24 @@ extern ExactoLBIdata buffer;
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 
+void uCOSFlagPost_Callback( uint8_t * perr)
+{
+    switch(*perr)
+    {
+        case OS_ERR_FLAG_INVALID_PGRP:
+            SendStr((int8_t*)"FLGPSTERR:OS_ERR_FLAG_INVALID_PGRP\n");
+            break;
+        case OS_ERR_EVENT_TYPE:
+            SendStr((int8_t*)"FLGPSTERR:OS_ERR_EVENT_TYPE\n");
+            break;
+        case OS_ERR_FLAG_INVALID_OPT:
+            SendStr((int8_t*)"FLGPSTERR:OS_ERR_FLAG_INVALID_OPT\n");
+            break;
+    }
+}
+
 uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
 {
-    if(src->cnt_lsm303 && src->cnt_bmp280 && src->cnt_ism330)   return 0;
     src->cnt_lsm303 = 0;
     src->cnt_bmp280 = 0;
     src->cnt_ism330 = 0;
@@ -55,7 +70,7 @@ void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
 void App_stm32(void * p_arg)
 {
     INT8U err;
-		uint8_t ferr;
+	uint8_t ferr;
     CmdToStm32 *msg;
     while(DEF_TRUE)
     {
@@ -129,21 +144,36 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
                                             OS_FLAG_CLR,
                                             perr);
-                    SendStr((int8_t*)"Switch to mode: waiting\n");
+                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: waiting\n");
+                    else
+                    {
+                        SendStr((int8_t*)"SWITCH_ERR:ALLWAITING_ESM\n");
+                        uCOSFlagPost_Callback(perr);
+                    }
                     break;
                 case ONLYLSM303_ESM:
                     OSFlagPost( pFlgSensors,
                                             FLG_LSM303,
                                             OS_FLAG_SET,
                                             perr);
-                SendStr((int8_t*)"Switch to mode: only lsm303\n");
+                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: only lsm303\n");
+                    else
+                    {
+                        SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
+                        uCOSFlagPost_Callback(perr);
+                    }
                     break;
                 case ALLRUNNING_ESM:
                     OSFlagPost( pFlgSensors,
                                             FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
                                             OS_FLAG_SET,
                                             perr);
-                    SendStr((int8_t*)"Switch to mode: all sensors\n");
+                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
+                    else
+                    {
+                        SendStr((int8_t*)"SWITCH_ERR:ALLRUNNING_ESM\n");
+                        uCOSFlagPost_Callback(perr);
+                    }
                     break;
             }
             break;
@@ -174,6 +204,13 @@ void        App_buffer(void * p_arg)
                 case FLG_ISM330:
                     SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
                     break;
+            }
+            if((buffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
+                ||(buffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
+                ||(buffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
+            {
+                ExactoLBIdataCLR(&buffer);
+                SendStr((int8_t*)"AP_BUFF:FORCE_BUFFER_CLR\n");
             }
         }
         else
