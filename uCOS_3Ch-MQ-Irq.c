@@ -159,7 +159,7 @@ void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uin
 }
 void FlagPendError_Callback(uint8_t src, OS_FLAGS flag)
 {
-    if(flag == OS_ERR_NONE)
+    if(flag != OS_ERR_NONE)
     {
         switch(src)
         {
