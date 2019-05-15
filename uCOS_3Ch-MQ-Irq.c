@@ -184,27 +184,27 @@ void FlagPostError_Callback(uint8_t src, OS_FLAGS flag)
             break;            
         case OS_ERR_PEND_ISR :
             __NOP();
-            SendStr((int8_t*)"OS_ERR_PEND_ISR\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_PEND_ISR\n");
             break; 
         case OS_ERR_FLAG_INVALID_PGRP:
             __NOP();
-            SendStr((int8_t*)"OS_ERR_FLAG_INVALID_PGRP\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_FLAG_INVALID_PGRP\n");
             break; 
         case OS_ERR_EVENT_TYPE:
             __NOP();
-            SendStr((int8_t*)"OS_ERR_EVENT_TYPE\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_EVENT_TYPE\n");
             break; 
         case OS_ERR_TIMEOUT:
             __NOP();
-            SendStr((int8_t*)"OS_ERR_TIMEOUT\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_TIMEOUT\n");
             break; 
         case OS_ERR_PEND_ABORT: 
             __NOP();
-            SendStr((int8_t*)"OS_ERR_PEND_ABORT\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_PEND_ABORT\n");
             break;             
         case OS_ERR_FLAG_WAIT_TYPE:
             __NOP();
-            SendStr((int8_t*)"OS_ERR_FLAG_WAIT_TYPE\n");
+            SendStr((int8_t*)"FLGERR:OS_ERR_FLAG_WAIT_TYPE\n");
             break; 
     }
 }
