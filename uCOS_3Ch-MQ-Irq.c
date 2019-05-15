@@ -471,7 +471,7 @@ static void App_Messager(void * p_arg)
         if(flags)
         {
             Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send);
-            if(Cnt_ExactoLBIdata2send)
+            if(Cnt_ExactoLBIdata2send > 3)
             {
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
                 SendStr((int8_t*)"h");
