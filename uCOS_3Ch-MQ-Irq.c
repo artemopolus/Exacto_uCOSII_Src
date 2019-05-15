@@ -157,7 +157,7 @@ void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uin
     dst->flgSens = flg;
     dst->TDiscr = tdiscr;
 }
-void FlagPostError_Callback(uint8_t src, OS_FLAGS flag)
+void FlagPendError_Callback(uint8_t src, OS_FLAGS flag)
 {
     if(flag == OS_ERR_NONE)
     {
@@ -334,7 +334,8 @@ static void App_lsm303(void * p_arg)
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
-        FlagPostError_Callback(FLG_LSM303, flValue);
+        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:lsm303\n");
+        FlagPendError_Callback(FLG_LSM303, error);
         OS_ENTER_CRITICAL()
 		ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
         OS_EXIT_CRITICAL()
@@ -375,7 +376,8 @@ static void App_bmp280(void * p_arg)
 		while(DEF_TRUE)
 		{
 			flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
-        FlagPostError_Callback(FLG_BMP280, flValue);
+            if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
+        FlagPendError_Callback(FLG_BMP280, error);
         OS_ENTER_CRITICAL()
             ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
         OS_EXIT_CRITICAL()
@@ -416,7 +418,8 @@ static void App_ism330(void * p_arg)
 		while(DEF_TRUE)
 		{
 			flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ALL,0,&error);
-            FlagPostError_Callback(FLG_ISM330, flValue);
+            if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
+            FlagPendError_Callback(FLG_ISM330, error);
         OS_ENTER_CRITICAL()
             ready = GetGXLData_ism330(Val_ism330.s1);
         OS_EXIT_CRITICAL()
