@@ -156,7 +156,8 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             FLG_LSM303,
                                             OS_FLAG_SET,
                                             perr);
-                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: only lsm303\n");
+                    if(*perr == OS_ERR_NONE) 
+											SendStr((int8_t*)"Switch to mode: only lsm303\n");
                     else
                     {
                         SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
