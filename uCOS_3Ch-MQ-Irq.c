@@ -28,7 +28,7 @@
 
 
 
-
+INT16U BaseDelay = OS_TICKS_PER_SEC;
 
 //  На базе этих массивов будут созданы стеки Задач 
 OS_STK         App_TaskStartStk[APP_TASK_STK_SIZE];
@@ -447,7 +447,7 @@ static void App_ism330(void * p_arg)
 static void App_Messager(void * p_arg)
 {
 
-    INT16U BaseDelay = OS_TICKS_PER_SEC;
+    
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
     INT8U err;
@@ -482,6 +482,7 @@ static void App_Messager(void * p_arg)
             {
                 SendStr((int8_t*)"No data in buffer\n");
             }
+						OSTimeDly(BaseDelay);
         }
         else
         {

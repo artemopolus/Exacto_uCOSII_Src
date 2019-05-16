@@ -12,6 +12,7 @@ extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
 extern OS_EVENT * pEvSensorBuff;
 extern ExactoLBIdata buffer;
+extern INT16U BaseDelay;
 
 #define CNTSTATES   10
 
@@ -131,6 +132,7 @@ void App_stm32(void * p_arg)
 }
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr)
 {
+	OS_CPU_SR cpu_sr = 0;
     if(RegAdr >= CntExactoStm32States)
         return;
     ExactoStm32States[RegAdr] = RegVal;
@@ -179,7 +181,26 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             }
             break;
         case SENDFREQ_ES32A:
-            break;
+					
+					switch(RegVal)
+					{
+						case (EXACTO_FREQ_100HZ):
+							OS_ENTER_CRITICAL()
+							BaseDelay = OS_TIME_10mS;
+							OS_EXIT_CRITICAL()
+							break;
+						case (EXACTO_FREQ_10HZ):
+							OS_ENTER_CRITICAL()
+							BaseDelay = OS_TIME_100mS;
+							OS_EXIT_CRITICAL()
+							break;
+						case (EXACTO_FREQ_1HZ):
+							OS_ENTER_CRITICAL()
+							BaseDelay = OS_TICKS_PER_SEC;
+							OS_EXIT_CRITICAL()
+							break;
+					}
+          break;
     }
 }
 void        App_buffer(void * p_arg)
