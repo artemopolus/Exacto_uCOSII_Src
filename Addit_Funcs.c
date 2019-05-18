@@ -10,9 +10,17 @@
 #include "includes.h"
 #include <stm32f10x.h>
 
+#include "exacto_commander.h"
+#include "exacto_buffer.h"
 #include "lsm303ah_reglib.h"
 #include "bmp280_reglib.h"
 #include "ism330_reglib.h"
+
+#include "exacto_struct.h"
+#include "exacto_defs.h"
+
+extern ExactoSensorSet lsm303;
+extern void SendStr(s8* ptr);
 
 //------------------------------------------------------------------------------------
 uint8_t Exacto_setfrq_ism330(uint8_t mode)
@@ -20,8 +28,7 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
     OS_CPU_SR cpu_sr = 0;
 	switch(mode)
 	{
-		case 0:
-			
+		case 0:			
 		OS_ENTER_CRITICAL()
         // 0100 01 0 0
 		write_ism330(ISM330DLC_CTRL1_XL,0x44);
@@ -62,20 +69,45 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 {
 	OS_CPU_SR cpu_sr = 0;
+    uint8_t trg = 0;
 	switch(mode)
 	{
 		case 0:
-		//0100 0100
-		OS_ENTER_CRITICAL()
-		write_lsm303ah(LSM303AH_CTRL1_A,0x44);
-		uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
-		OS_EXIT_CRITICAL()
-		if(ctrl1 == 0x44)
-			return 1;
-		else
-			return 0;
+            //0100 0100 -- 100 Hz
+            trg = 0x44;
+            break;
+        case 1:
+            // 800 Hz 1111 01 00
+            trg = 0xF4;
+            break;
+        default:
+            return 0;
 	}
-	return 0;
+    OS_ENTER_CRITICAL()
+    write_lsm303ah(LSM303AH_CTRL1_A,trg);
+    uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
+    OS_EXIT_CRITICAL()
+    if(ctrl1 == trg)
+    {
+        switch(mode)
+        {
+            case 0:
+                OS_ENTER_CRITICAL()
+                lsm303.TDiscr = OS_TIME_10mS;
+                OS_EXIT_CRITICAL()
+                SendStr((int8_t*)"SETFREQ:lsm303:10ms\n");
+                break;
+            case 1:
+                OS_ENTER_CRITICAL()
+                lsm303.TDiscr = (INT16U)12; 
+                OS_EXIT_CRITICAL()
+                SendStr((int8_t*)"SETFREQ:lsm303:1.2ms\n");
+                break;
+        }
+        return 1;
+    }
+    else
+        return 0;
 }
 uint8_t Exacto_slftst_lsm303ah(void)
 {

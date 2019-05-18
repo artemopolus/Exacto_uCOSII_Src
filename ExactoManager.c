@@ -14,6 +14,8 @@ extern OS_EVENT * pEvSensorBuff;
 extern ExactoLBIdata buffer;
 extern INT16U BaseDelay;
 
+uint8_t Exacto_setfrq_lsm303ah(uint8_t mode);
+
 #define CNTSTATES   10
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
@@ -201,6 +203,12 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
 							break;
 					}
           break;
+        case SET_LSM303:
+
+            if(Exacto_setfrq_lsm303ah(RegVal))  SendStr((int8_t*)"SETFRQ:lsm303\n");
+            else SendStr((int8_t*)"SET_ERR:lsm303\n");
+
+            break;
     }
 }
 void        App_buffer(void * p_arg)
