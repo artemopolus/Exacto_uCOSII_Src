@@ -321,16 +321,19 @@ static void App_lsm303(void * p_arg)
     OS_FLAGS flValue;
 	
     //SensorParameters splsm330;
-	Parameters->Whoami = Exacto_init_lsm303ah();
-    strcpy(Parameters->Name,"lsm330");
-    SensorData Val_lsm303;
-    Val_lsm303.pSensor = FLG_LSM303;
-    if(!Exacto_setfrq_lsm303ah(0))
+    if(Exacto_init_lsm303ah())
     {
-        __NOP();
-        SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
+        Parameters->Whoami = 1;
+        strcpy(Parameters->Name,"lsm330");       
+        if(!Exacto_setfrq_lsm303ah(0))
+        {
+            __NOP();
+            SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
+        }
     }
     uint8_t ready = 0;
+    SensorData Val_lsm303;
+    Val_lsm303.pSensor = FLG_LSM303;
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);

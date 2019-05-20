@@ -14,11 +14,27 @@ extern OS_EVENT * pEvSensorBuff;
 extern ExactoLBIdata buffer;
 extern INT16U BaseDelay;
 
+uint8_t Exacto_getfrq_lsm303ah(void);
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode);
+uint8_t Exacto_getfrq_ism330_G(void);
+uint8_t Exacto_setfrq_ism330(uint8_t mode);
+uint8_t Exacto_getfrq_bmp280(void);
+uint8_t Exacto_setfrq_bmp280(uint8_t mode);
+
+
+extern ExactoSensorSet lsm303;
+extern ExactoSensorSet bmp280;
+extern ExactoSensorSet ism330;
 
 #define CNTSTATES   10
+                   //0123456789012345678901234567890
+char StringMode[] = "STM32 FLAG MODE = xxx \n";
+//                                1         2         3         4         5
+                      //0123456789012345678901234567890123456789012345678901234567890
+char StringSensors[] = "BD = xxxxxx LSM303 = xxx BMP280 = xxx ISM330 = xxx\n";
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
+void ExactoStm32ReportStates_Callback(uint8_t RegAdr);
 
 void uCOSFlagPost_Callback( uint8_t * perr)
 {
@@ -105,6 +121,7 @@ void App_stm32(void * p_arg)
                     SendStr((int8_t*)"value=");
                     SendStr((int8_t*)&cBuf[3]);
                     SendStr((int8_t*)"\n");
+                    ExactoStm32ReportStates_Callback(msg->adr);
                 }
             }
         } else {
@@ -130,6 +147,37 @@ void App_stm32(void * p_arg)
 					break;
 			}
         }
+    }
+}
+void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
+{
+    uint8_t err;
+    OS_FLAGS flags;
+    uint8_t ctrl;
+    switch (RegAdr)
+    {
+        case READSENSMODE_ES32A:
+            flags = OSFlagQuery(pFlgSensors, &err);
+            Dec_Convert((s8*)cBuf, flags);
+            strcpy(&StringMode[18], (char*)&cBuf[3]);
+            SendStr((int8_t*)StringMode);
+            break;
+        case SENDFREQ_ES32A:
+            Dec_Convert((s8*)cBuf, BaseDelay);
+            strcpy(&StringSensors[5], (char*)&cBuf[10]);
+            ctrl = Exacto_getfrq_lsm303ah();
+            Dec_Convert((s8*)cBuf, ctrl);
+            strcpy(&StringSensors[21], (char*)&cBuf[13]);
+            ctrl = Exacto_getfrq_bmp280();
+            Dec_Convert((s8*)cBuf, ctrl);
+            strcpy(&StringSensors[34], (char*)&cBuf[13]);
+            ctrl = Exacto_getfrq_ism330_G();
+            Dec_Convert((s8*)cBuf, ctrl);
+            strcpy(&StringSensors[47], (char*)&cBuf[13]);
+            SendStr((int8_t*)StringSensors);
+            break;
+        case SET_LSM303:
+            break;
     }
 }
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr)

@@ -23,6 +23,14 @@ extern ExactoSensorSet lsm303;
 extern void SendStr(s8* ptr);
 
 //------------------------------------------------------------------------------------
+uint8_t Exacto_getfrq_ism330_G(void)
+{
+    OS_CPU_SR cpu_sr = 0;
+    OS_ENTER_CRITICAL()
+    uint8_t ctrl1 = read_ism330(ISM330DLC_CTRL2_G);
+    OS_EXIT_CRITICAL()
+    return ctrl1;
+}
 uint8_t Exacto_setfrq_ism330(uint8_t mode)
 {
     OS_CPU_SR cpu_sr = 0;
@@ -43,6 +51,14 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 			return 0;
 	}
 	return 0;
+}
+uint8_t Exacto_getfrq_bmp280(void)
+{
+    OS_CPU_SR cpu_sr = 0;
+    OS_ENTER_CRITICAL()
+    uint8_t ctrl1 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+    OS_EXIT_CRITICAL()
+    return ctrl1;
 }
 uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 {
@@ -65,6 +81,14 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 			return 0;
 	}
 	return 0;
+}
+uint8_t Exacto_getfrq_lsm303ah(void)
+{
+    OS_CPU_SR cpu_sr = 0;
+    OS_ENTER_CRITICAL()
+    uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
+    OS_EXIT_CRITICAL()
+    return ctrl1;
 }
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 {
@@ -326,6 +350,7 @@ u16 FreeStkSpace(OS_STK * x)
 #define TRUE !FALSE
 
 s8* Dec_Convert(s8* buf, s32 value) {
+                //0123456789
 	int divider = 1000000000;     
 	unsigned char bNZflag=FALSE, minus=FALSE;		//  Флаги левых нулей и минуса
 	unsigned char current_digit;
