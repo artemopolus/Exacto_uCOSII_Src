@@ -41,7 +41,7 @@
 #define  APP_TASK_MEAS3_PRIO             7  
 
 #define		APP_LSM303_MEAS_PRIO					7
-#define		APP_BMP280_MEAS_PRIO					3
+#define		APP_BMP280_MEAS_PRIO					6
 #define		APP_ISM330_MEAS_PRIO					5
 
 #define  APP_TASK_SEND_PRIO             11

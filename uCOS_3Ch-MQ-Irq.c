@@ -267,42 +267,140 @@ static  void  App_TaskStart (void *p_arg)
     pMailStm32 = OSMboxCreate((void*)0);
   
   
-  OSTaskCreate((void (*)(void *)) App_Messager,  
+  switch(OSTaskCreate((void (*)(void *)) App_Messager,  
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_Messager[APP_TASK_STK_SIZE - 1],
                (INT8U           ) APP_TASK_SEND_PRIO   
-              );
-  OSTaskCreate((void (*)(void *)) App_stm32,  
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
+  switch(OSTaskCreate((void (*)(void *)) App_stm32,  
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_stm32[APP_TASK_STK_SIZE - 1],
                (INT8U           ) APP_TASK_STM32_PRIO   
-              );
-  OSTaskCreate((void (*)(void *)) App_buffer,  
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
+  switch(OSTaskCreate((void (*)(void *)) App_buffer,  
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_buffer[APP_TASK_STK_SIZE - 1],
                (INT8U           ) APP_TASK_BUFFER_PRIO   
-              );
-  OSTaskCreate((void (*)(void *)) App_UartRxBuffParser,        //  Создадим Задачу для измерения1
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
+  switch(OSTaskCreate((void (*)(void *)) App_UartRxBuffParser,        //  Создадим Задачу для измерения1
                (void          * ) 0,
                (OS_STK        * ) &Stk_App_UartRxBuffParser[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
                (INT8U           ) APP_TASK_UART_SEND_PRIO   // Уровень приоритета для этой Задачи =5
-              );
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }           
 	
-  OSTaskCreate((void (*)(void *)) App_lsm303,        //  Создадим Задачу для измерения1
+  switch(OSTaskCreate((void (*)(void *)) App_lsm303,        //  Создадим Задачу для измерения1
                (void          * ) &lsm303,
                (OS_STK        * ) &Stk_App_lsm303[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
                (INT8U           ) APP_LSM303_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              );
-  OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
+  switch(OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
                (void          * ) &bmp280,
                (OS_STK        * ) &Stk_App_bmp280[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
                (INT8U           ) APP_BMP280_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              );
-  OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
+              ) )
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
+  switch(OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
                (void          * ) &ism330,
                (OS_STK        * ) &Stk_App_ism330[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
                (INT8U           ) APP_ISM330_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              );
+              ))
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+        case OS_ERR_TASK_CREATE_ISR:
+            __NOP();
+            break;
+    }
   
   OSTaskDel(OS_PRIO_SELF);   //  
 }   
@@ -489,10 +587,12 @@ static void App_Messager(void * p_arg)
         }
         else
         {
+
             Dec_Convert((s8*)cBuf, CounterDelay); 
             SendStr((int8_t*)"Timer=");
             SendStr((int8_t*)&cBuf[6]);
             SendStr((int8_t*)"s\n");
+            
             OSTimeDly(BaseDelay);
         }
     }
@@ -565,6 +665,19 @@ static void App_UartRxBuffParser(void *p_arg)
                         SendStr((int8_t*)"value=");
                         Dec_Convert((s8*)cBuf, ExactoStm32States[RegAdr]);
                         SendStr((s8*)&cBuf[6]);
+                        bMailStm32.actiontype = 1;
+                        bMailStm32.adr = RegAdr;
+                        bMailStm32.val = RegVal;
+                        Merr = OSMboxPost(pMailStm32, (void *)&bMailStm32);
+                        if(Merr == OS_ERR_NONE)
+                        {
+                            __NOP();
+                        }
+                        else
+                        {
+                            __NOP();
+                            SendStr((int8_t*)"MBOX_ERR:bMailStm32 READ\n");
+                        }
                     }
                     else
                     {
@@ -584,7 +697,7 @@ static void App_UartRxBuffParser(void *p_arg)
                 case 2:
                     if(TrgSens == 0)
                     {
-                        bMailStm32.actiontype = 1;
+                        bMailStm32.actiontype = 2;
                         bMailStm32.adr = RegAdr;
                         bMailStm32.val = RegVal;
                         Merr = OSMboxPost(pMailStm32, (void *)&bMailStm32);
@@ -595,6 +708,7 @@ static void App_UartRxBuffParser(void *p_arg)
                         else
                         {
                             __NOP();
+                            SendStr((int8_t*)"MBOX_ERR:bMailStm32 WRITE\n");
                         }
                     }
                     else

@@ -29,6 +29,8 @@ extern ExactoSensorSet lsm303;
 extern ExactoSensorSet bmp280;
 extern ExactoSensorSet ism330;
 
+
+
 #define CNTSTATES   10
                    //0123456789012345678901234567890
 char StringMode[] = "STM32 FLAG MODE = xxx \n";
@@ -103,8 +105,9 @@ void App_stm32(void * p_arg)
         if (err == OS_ERR_NONE) {
             if(msg->adr < CntExactoStm32States)
             {
-                if(msg->actiontype)
+                switch(msg->actiontype)
                 {
+                    case 2:
                     SendStr((int8_t*)"Write stm32 states:\n");
                     Dec_Convert((s8*)cBuf, msg->adr);
                     SendStr((int8_t*)"adr=");
@@ -115,9 +118,8 @@ void App_stm32(void * p_arg)
                     SendStr((int8_t*)&cBuf[3]);
                     SendStr((int8_t*)"\n");
                     ExactoStm32StatesChanged_Callback(msg->adr,msg->val,&ferr);
-                }
-                else
-                {
+                    break;
+                    case 1:
                     SendStr((int8_t*)"Read stm32 states:\n");
                     Dec_Convert((s8*)cBuf, msg->adr);
                     SendStr((int8_t*)"adr=");
@@ -127,7 +129,10 @@ void App_stm32(void * p_arg)
                     SendStr((int8_t*)"value=");
                     SendStr((int8_t*)&cBuf[3]);
                     SendStr((int8_t*)"\n");
+                    
                     ExactoStm32ReportStates_Callback(msg->adr);
+                    
+                    break;
                 }
             }
         } else {
