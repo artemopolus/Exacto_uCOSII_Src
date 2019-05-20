@@ -376,32 +376,32 @@ static void App_bmp280(void * p_arg)
         SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
     }
     uint8_t ready = 0;
-		while(DEF_TRUE)
-		{
-			flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
-            if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
+    while(DEF_TRUE)
+    {
+        flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
+        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
         FlagPendError_Callback(FLG_BMP280, error);
         OS_ENTER_CRITICAL()
-            ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
+        ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
         OS_EXIT_CRITICAL()
-            if(ready)
+        if(ready)
+        {
+            if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
             {
-				if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
-                {
-                    __NOP();
-                    SendStr((int8_t*)"OS_Q_FULL:bmp280\n");
-                }
-                OSQQuery(pEvSensorBuff, &infSensorBuff);
-                cntSensorBuff = infSensorBuff.OSNMsgs;
-                if(CNTSENSORBUFFER==cntSensorBuff)
-                {
-                    __NOP();
-                    SendStr((int8_t*)"OS_Q_CNTWRN:bmp280\n");
-                }
-                OSTimeDly(Parameters->TDiscr);
+                __NOP();
+                SendStr((int8_t*)"OS_Q_FULL:bmp280\n");
             }
-            else OSTimeDly(OS_TIME_1mS);
-		}
+            OSQQuery(pEvSensorBuff, &infSensorBuff);
+            cntSensorBuff = infSensorBuff.OSNMsgs;
+            if(CNTSENSORBUFFER==cntSensorBuff)
+            {
+                __NOP();
+                SendStr((int8_t*)"OS_Q_CNTWRN:bmp280\n");
+            }
+            OSTimeDly(Parameters->TDiscr);
+        }
+        else OSTimeDly(OS_TIME_1mS);
+    }
 }
 static void App_ism330(void * p_arg)
 {

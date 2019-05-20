@@ -16,8 +16,11 @@ extern INT16U BaseDelay;
 
 uint8_t Exacto_getfrq_lsm303ah(void);
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode);
+uint8_t Exacto_slftst_lsm303ah(void);
+
 uint8_t Exacto_getfrq_ism330_G(void);
 uint8_t Exacto_setfrq_ism330(uint8_t mode);
+
 uint8_t Exacto_getfrq_bmp280(void);
 uint8_t Exacto_setfrq_bmp280(uint8_t mode);
 
@@ -31,7 +34,10 @@ extern ExactoSensorSet ism330;
 char StringMode[] = "STM32 FLAG MODE = xxx \n";
 //                                1         2         3         4         5
                       //0123456789012345678901234567890123456789012345678901234567890
-char StringSensors[] = "BD = xxxxxx LSM303 = xxx BMP280 = xxx ISM330 = xxx\n";
+char StringSensors[] = "BD = xxxxxx LSM303 = xxx BMP280 = xxx ISM330 = xxx \n";
+//                                 1         2         3         4         5
+                      // 0123456789012345678901234567890123456789012345678901234567890
+char StringSensInfo[] = "Sensor = xxxxxx Freq = xxx Delay = xxxxxx \n";
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 void ExactoStm32ReportStates_Callback(uint8_t RegAdr);
@@ -164,19 +170,25 @@ void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
             break;
         case SENDFREQ_ES32A:
             Dec_Convert((s8*)cBuf, BaseDelay);
-            strcpy(&StringSensors[5], (char*)&cBuf[10]);
+            strcpy(&StringSensors[5], (char*)&cBuf[4]);
             ctrl = Exacto_getfrq_lsm303ah();
             Dec_Convert((s8*)cBuf, ctrl);
-            strcpy(&StringSensors[21], (char*)&cBuf[13]);
+            strcpy(&StringSensors[21], (char*)&cBuf[7]);
             ctrl = Exacto_getfrq_bmp280();
             Dec_Convert((s8*)cBuf, ctrl);
-            strcpy(&StringSensors[34], (char*)&cBuf[13]);
+            strcpy(&StringSensors[34], (char*)&cBuf[7]);
             ctrl = Exacto_getfrq_ism330_G();
             Dec_Convert((s8*)cBuf, ctrl);
-            strcpy(&StringSensors[47], (char*)&cBuf[13]);
+            strcpy(&StringSensors[47], (char*)&cBuf[7]);
             SendStr((int8_t*)StringSensors);
             break;
         case SET_LSM303:
+            strcpy(&StringSensInfo[9],lsm303.Name);
+            ctrl = Exacto_getfrq_lsm303ah();
+            Dec_Convert((s8*)cBuf, ctrl);
+            strcpy(&StringSensInfo[23], (char*)&cBuf[7]);
+            Dec_Convert((s8*)cBuf, lsm303.TDiscr);
+            strcpy(&StringSensInfo[35], (char*)&cBuf[4]);
             break;
     }
 }
@@ -231,31 +243,40 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             }
             break;
         case SENDFREQ_ES32A:
-					
-					switch(RegVal)
-					{
-						case (EXACTO_FREQ_100HZ):
-							OS_ENTER_CRITICAL()
-							BaseDelay = OS_TIME_10mS;
-							OS_EXIT_CRITICAL()
-							break;
-						case (EXACTO_FREQ_10HZ):
-							OS_ENTER_CRITICAL()
-							BaseDelay = OS_TIME_100mS;
-							OS_EXIT_CRITICAL()
-							break;
-						case (EXACTO_FREQ_1HZ):
-							OS_ENTER_CRITICAL()
-							BaseDelay = OS_TICKS_PER_SEC;
-							OS_EXIT_CRITICAL()
-							break;
-					}
+            switch(RegVal)
+            {
+                case (EXACTO_FREQ_100HZ):
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = OS_TIME_10mS;
+                    OS_EXIT_CRITICAL()
+                    break;
+                case (EXACTO_FREQ_10HZ):
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = OS_TIME_100mS;
+                    OS_EXIT_CRITICAL()
+                    break;
+                case (EXACTO_FREQ_1HZ):
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = OS_TICKS_PER_SEC;
+                    OS_EXIT_CRITICAL()
+                    break;
+            }
           break;
         case SET_LSM303:
-
-            if(Exacto_setfrq_lsm303ah(RegVal))  SendStr((int8_t*)"SETFRQ:lsm303\n");
-            else SendStr((int8_t*)"SET_ERR:lsm303\n");
-
+            //Set Frequency
+            if(RegVal <= 3)  //0:100Hz 1:800Hz 2:1600Hz 3:6400Hz
+            {
+                if(Exacto_setfrq_lsm303ah(RegVal))  SendStr((int8_t*)"SET_FRQ_LSM303\n");
+                else SendStr((int8_t*)"SET_ERR:lsm303\n");
+            }
+            //Selftest
+            if(RegVal == 4)
+            {
+                if ( Exacto_slftst_lsm303ah() )
+                    SendStr((int8_t*)"SLFTST: success\n");
+                else
+                    SendStr((int8_t*)"SLFTST: failed\n");
+            }
             break;
     }
 }
