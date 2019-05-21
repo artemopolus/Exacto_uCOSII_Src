@@ -25,7 +25,7 @@
 //#define PING_MODE
 #define UARTMAXWORDLEN   80
 
-
+//#define BMP280
 
 
 INT16U BaseDelay = OS_TICKS_PER_SEC;
@@ -363,6 +363,7 @@ static  void  App_TaskStart (void *p_arg)
             __NOP();
             break;
     }
+		#ifdef BMP280
   switch(OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
                (void          * ) &bmp280,
                (OS_STK        * ) &Stk_App_bmp280[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
@@ -382,6 +383,7 @@ static  void  App_TaskStart (void *p_arg)
             __NOP();
             break;
     }
+		#endif
   switch(OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
                (void          * ) &ism330,
                (OS_STK        * ) &Stk_App_ism330[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
