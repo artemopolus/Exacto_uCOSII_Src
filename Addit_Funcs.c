@@ -20,11 +20,15 @@
 #include "exacto_defs.h"
 
 extern ExactoSensorSet lsm303;
+extern ExactoSensorSet bmp280;
+extern ExactoSensorSet ism330;
+
 extern void SendStr(s8* ptr);
 
 //------------------------------------------------------------------------------------
 uint8_t Exacto_getfrq_ism330_G(void)
 {
+    if(!ism330.Whoami) return 0;
     OS_CPU_SR cpu_sr = 0;
     OS_ENTER_CRITICAL()
     uint8_t ctrl1 = read_ism330(ISM330DLC_CTRL2_G);
@@ -33,6 +37,7 @@ uint8_t Exacto_getfrq_ism330_G(void)
 }
 uint8_t Exacto_setfrq_ism330(uint8_t mode)
 {
+    if(!ism330.Whoami) return 0;
     OS_CPU_SR cpu_sr = 0;
 	switch(mode)
 	{
@@ -54,6 +59,7 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 }
 uint8_t Exacto_getfrq_bmp280(void)
 {
+    if(!bmp280.Whoami) return 0;
     OS_CPU_SR cpu_sr = 0;
     OS_ENTER_CRITICAL()
     uint8_t ctrl1 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
@@ -62,6 +68,7 @@ uint8_t Exacto_getfrq_bmp280(void)
 }
 uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 {
+    if(!bmp280.Whoami) return 0;
 	OS_CPU_SR cpu_sr = 0;
 	switch(mode)
 	{
@@ -84,6 +91,7 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 }
 uint8_t Exacto_getfrq_lsm303ah(void)
 {
+    if(!lsm303.Whoami) return 0;
     OS_CPU_SR cpu_sr = 0;
     OS_ENTER_CRITICAL()
     uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
@@ -92,6 +100,7 @@ uint8_t Exacto_getfrq_lsm303ah(void)
 }
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 {
+    if(!lsm303.Whoami) return 0;
 	OS_CPU_SR cpu_sr = 0;
     uint8_t trg = 0;
 	switch(mode)
@@ -135,6 +144,7 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 }
 uint8_t Exacto_slftst_lsm303ah(void)
 {
+    if(!lsm303.Whoami) return 0;
 //	uint8_t data[6];
 	int16_t data_BUFF[] = {0,0,0};
 	int16_t data_NOST[] = {0,0,0};
@@ -237,7 +247,7 @@ uint8_t Exacto_slftst_lsm303ah(void)
 	if (flag == 3)
 		return 1;
 	else
-	return 0;
+        return 0;
 }
 
 uint8_t Exacto_init_lsm303ah(void)
