@@ -25,7 +25,6 @@
 //#define PING_MODE
 #define UARTMAXWORDLEN   80
 
-//#define BMP280
 
 
 INT16U BaseDelay = OS_TICKS_PER_SEC;
@@ -87,6 +86,10 @@ u8 ucSend=0, ucSend1=0, ucSend2=0;  //  Длит.передачи в UART
 
 s8    cBuf[16];         //  Буфер для строки результата
 s8*   pTx;              //  Указатель для передачи в обработчик адреса строки
+
+uint8_t * pTxFixLength;
+uint8_t pTxFixLengthCnt = 0;
+uint8_t pTxFixLength_i = 0;
 //EVENTS
 OS_EVENT * pMailStm32;
 CmdToStm32 bMailStm32;
@@ -120,6 +123,8 @@ u16 Write1_Poll(s8* ptr);
 void Periph_Init(void);
 u16 FreeStkSpace(OS_STK * x);
 void SendStr(s8* ptr);          //  Функция запуска передачи
+
+void SendStrFixLen(uint8_t * ptr, uint8_t cnt);
 
 void UART_init(void);
 void USART2_IRQHandler(void);
@@ -363,7 +368,6 @@ static  void  App_TaskStart (void *p_arg)
             __NOP();
             break;
     }
-		#ifdef BMP280
   switch(OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
                (void          * ) &bmp280,
                (OS_STK        * ) &Stk_App_bmp280[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
@@ -383,7 +387,7 @@ static  void  App_TaskStart (void *p_arg)
             __NOP();
             break;
     }
-		#endif
+
   switch(OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
                (void          * ) &ism330,
                (OS_STK        * ) &Stk_App_ism330[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
@@ -423,13 +427,18 @@ static void App_lsm303(void * p_arg)
     //SensorParameters splsm330;
     if(Exacto_init_lsm303ah())
     {
-        Parameters->Whoami = 1;
-        strcpy(Parameters->Name,"lsm330");       
+//        Parameters->Whoami = 1;
+//        strcpy(Parameters->Name,"lsm330");  
+        lsm303.Whoami = 1;        
         if(!Exacto_setfrq_lsm303ah(0))
         {
             __NOP();
             SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
         }
+    }
+    else
+    {
+        OSTaskDel(OS_PRIO_SELF);
     }
     uint8_t ready = 0;
     SensorData Val_lsm303;
@@ -468,12 +477,19 @@ static void App_bmp280(void * p_arg)
     uint8_t error;
     OS_FLAGS flValue;
     SensorData Val_bmp280;
-    Parameters->Whoami = Exacto_init_bmp280();
     Val_bmp280.pSensor = FLG_BMP280;
-    if(!Exacto_setfrq_bmp280(0))
+    if(Exacto_init_bmp280())
     {
-        __NOP();
-        SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
+        bmp280.Whoami = 1;
+        if(!Exacto_setfrq_bmp280(0))
+        {
+            __NOP();
+            SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
+        }
+    }
+    else
+    {
+        OSTaskDel(OS_PRIO_SELF);
     }
     uint8_t ready = 0;
     while(DEF_TRUE)
@@ -511,39 +527,46 @@ static void App_ism330(void * p_arg)
     uint8_t ready = 0;
     OS_FLAGS flValue;
     SensorData  Val_ism330;
-    Parameters->Whoami = Exacto_init_ism330();
     Val_ism330.pSensor = FLG_ISM330;
-    if(!Exacto_setfrq_ism330(0))
+    if( Exacto_init_ism330())
     {
-        __NOP();
-        SendStr((int8_t*)"ERRSET:ism330 set freq\n");
+        ism330.Whoami = 1;
+        if(!Exacto_setfrq_ism330(0))
+        {
+            __NOP();
+            SendStr((int8_t*)"ERRSET:ism330 set freq\n");
+        }
     }
-		while(DEF_TRUE)
-		{
-			flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ALL,0,&error);
-            if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
-            FlagPendError_Callback(FLG_ISM330, error);
+    else
+    {
+        OSTaskDel(OS_PRIO_SELF);
+    }
+    while(DEF_TRUE)
+    {
+        flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ALL,0,&error);
+        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
+        FlagPendError_Callback(FLG_ISM330, error);
         OS_ENTER_CRITICAL()
             ready = GetGXLData_ism330(Val_ism330.s1);
         OS_EXIT_CRITICAL()
-            if(ready)
+        if(ready)
+        {
+            if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
             {
-				if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
-                {
-                    __NOP();
-                    SendStr((int8_t*)"OS_Q_FULL:ism330\n");
-                }
-                OSQQuery(pEvSensorBuff, &infSensorBuff);
-                cntSensorBuff = infSensorBuff.OSNMsgs;
-                if(CNTSENSORBUFFER==cntSensorBuff)
-                {
-                    __NOP();
-                    SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
-                }
-                OSTimeDly(Parameters->TDiscr);
+                __NOP();
+                SendStr((int8_t*)"OS_Q_FULL:ism330\n");
             }
-        else OSTimeDly(OS_TIME_1mS);
-		}
+            OSQQuery(pEvSensorBuff, &infSensorBuff);
+            cntSensorBuff = infSensorBuff.OSNMsgs;
+            if(CNTSENSORBUFFER==cntSensorBuff)
+            {
+                __NOP();
+                SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
+            }
+            OSTimeDly(Parameters->TDiscr);
+        }
+    else OSTimeDly(OS_TIME_1mS);
+    }
 }
 
 
@@ -578,7 +601,8 @@ static void App_Messager(void * p_arg)
             {
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
                 SendStr((int8_t*)"h");
-                SendStr((s8*)ExactoLBIdata2send);
+                //SendStr((s8*)ExactoLBIdata2send);
+                SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
                 SendStr((int8_t*)"\n");
             }
             else
@@ -755,7 +779,15 @@ u8 err;        //  Для кода завершения
   pTx=ptr;                  //  Да, передача адреса строки символов 
   USART_ITConfig(USART2, USART_IT_TXE, ENABLE); //  разрешить запрос от Тх
 }
-
+void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
+{
+    uint8_t err;
+    OSSemPend(pUart,0,&err);
+    pTxFixLength = ptr;
+    pTxFixLengthCnt = cnt;
+    pTxFixLength_i = 0;
+    USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+}
 
 // --------------- Обработчик прерывания от USART1 -------------------
 void USART2_IRQHandler(void) {
@@ -765,8 +797,19 @@ void USART2_IRQHandler(void) {
             USART_SendData(USART2, *pTx++);
         else 
         {   
+            if(pTxFixLengthCnt == 0)
+            {                
+                USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+                pTx = 0;
+                OSSemPost(pUart);
+            }
+        }
+        if(pTxFixLengthCnt != pTxFixLength_i)
+            USART_SendData(USART2, pTxFixLength[pTxFixLength_i++]);
+        else
+        {
             USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-            pTx = 0;
+            pTxFixLength = 0;
             OSSemPost(pUart);
         }
     }

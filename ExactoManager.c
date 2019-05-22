@@ -6,6 +6,7 @@
 extern OS_EVENT * pMailStm32;
 extern OS_FLAG_GRP * pFlgSensors;
 extern void SendStr(s8* ptr); 
+extern void SendStrFixLen(uint8_t * ptr, uint8_t cnt);
 extern s8* Dec_Convert(s8* buf, s32 value);
 extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
