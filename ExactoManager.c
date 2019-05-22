@@ -77,10 +77,11 @@ uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst)
     for(uint8_t i = 0; i < src->cnt_lsm303; i++) dst[i + 3]                                        = src->lsm303[i];
     for(uint8_t i = 0; i < src->cnt_bmp280; i++) dst[i + 3 + src->cnt_lsm303]                      = src->bmp280[i];
     for(uint8_t i = 0; i < src->cnt_ism330; i++) dst[i + 3 + src->cnt_lsm303 + src->cnt_bmp280]    = src->ism330[i];
+		uint8_t allcount = (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
     src->cnt_lsm303 = 0;
     src->cnt_bmp280 = 0;
     src->cnt_ism330 = 0;
-    return (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
+    return allcount;
 }
 
 void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
@@ -179,8 +180,10 @@ void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
             ctrl = Exacto_getfrq_lsm303ah();
             Dec_Convert((s8*)cBuf, ctrl);
             strcpy(&StringSensors[21], (char*)&cBuf[7]);
+				#ifdef BMP280
             ctrl = Exacto_getfrq_bmp280();
             Dec_Convert((s8*)cBuf, ctrl);
+				#endif
             strcpy(&StringSensors[34], (char*)&cBuf[7]);
             ctrl = Exacto_getfrq_ism330_G();
             Dec_Convert((s8*)cBuf, ctrl);
