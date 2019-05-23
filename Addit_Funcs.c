@@ -37,25 +37,42 @@ uint8_t Exacto_getfrq_ism330_G(void)
 }
 uint8_t Exacto_setfrq_ism330(uint8_t mode)
 {
-    if(!ism330.Whoami) return 0;
-    OS_CPU_SR cpu_sr = 0;
+  if(!ism330.Whoami) return 0;
+  OS_CPU_SR cpu_sr = 0;
+	uint8_t trgXL = 0x00;
+	uint8_t trgG = 0x00;
 	switch(mode)
 	{
-		case 0:			
-		OS_ENTER_CRITICAL()
-        // 0100 01 0 0
-		write_ism330(ISM330DLC_CTRL1_XL,0x44);
-		uint8_t ctrl1 = read_ism330(ISM330DLC_CTRL1_XL);
-        // 0100 11 0 0
-        write_ism330(ISM330DLC_CTRL2_G,0x4c);
-		uint8_t ctrl2 = read_ism330(ISM330DLC_CTRL2_G);
-		OS_EXIT_CRITICAL()
-		if((ctrl1 == 0x44)&&(ctrl2 == 0x4c))
-			return 1;
-		else
+		case 0:
+			// 0100 01 0 0
+			trgXL = 0x44;
+			// 0100 11 0 0
+			trgG = 0x4c;
+			break;
+		default:
 			return 0;
 	}
-	return 0;
+	OS_ENTER_CRITICAL()
+	write_ism330(ISM330DLC_CTRL1_XL,	trgXL);
+	write_ism330(ISM330DLC_CTRL2_G,	trgG);
+	uint8_t ctrl1 = read_ism330(ISM330DLC_CTRL1_XL);
+	uint8_t ctrl2 = read_ism330(ISM330DLC_CTRL2_G);
+	OS_EXIT_CRITICAL()
+	if((ctrl1 == trgXL)&&(ctrl2 == trgG))
+	{
+		switch(mode)
+		{
+				case 0:
+						OS_ENTER_CRITICAL()
+						ism330.TDiscr = OS_TIME_10mS;
+						OS_EXIT_CRITICAL()
+						SendStr((int8_t*)"SETFREQ:ism330:10ms\n");
+						break;
+		}
+		return 1;
+	}
+	else
+		return 0;
 }
 uint8_t Exacto_getfrq_bmp280(void)
 {
@@ -81,8 +98,11 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 		// 101 010 11
 		write_bmp280(BMP280_CTRL_MEAS_ADDR,0xab);
 		uint8_t ctrl = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+		// tsb 000 fltr 0000 spi3 0
+		write_bmp280(BMP280_CONFIG_ADDR,0x00);
+		uint8_t ctrl2 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
 		OS_EXIT_CRITICAL()
-		if(ctrl == 0xab)
+		if((ctrl == 0xab)&&(ctrl2 == 0x00))
 			return 1;
 		else
 			return 0;
@@ -102,25 +122,32 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 {
     if(!lsm303.Whoami) return 0;
 	OS_CPU_SR cpu_sr = 0;
-    uint8_t trg = 0;
+  uint8_t trg = 0;
+	uint8_t trgM = 0;
 	switch(mode)
 	{
 		case 0:
             //0100 0100 -- 100 Hz
             trg = 0x44;
+						//0000 1100 -- 100 Hz
+						trgM = 0x0C;
             break;
         case 1:
             // 800 Hz 1111 01 00
             trg = 0xF4;
+						//0000 1100 -- 100 Hz
+						trgM = 0x0C;
             break;
         default:
             return 0;
 	}
     OS_ENTER_CRITICAL()
     write_lsm303ah(LSM303AH_CTRL1_A,trg);
+		write_lsm303ah(LSM303AH_CFG_REG_A_M,trgM);
     uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
+		uint8_t ctrl2 = read_lsm303ah(LSM303AH_CFG_REG_A_M);
     OS_EXIT_CRITICAL()
-    if(ctrl1 == trg)
+    if((ctrl1 == trg)&&(ctrl2 == trgM))
     {
         switch(mode)
         {

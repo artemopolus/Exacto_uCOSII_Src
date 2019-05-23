@@ -449,7 +449,8 @@ static void App_lsm303(void * p_arg)
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:lsm303\n");
         FlagPendError_Callback(FLG_LSM303, error);
         OS_ENTER_CRITICAL()
-		ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
+				//ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
+				ready = Get_XL_M_uint8_lsm303ah(Val_lsm303.s1,Val_lsm303.s2);
         OS_EXIT_CRITICAL()
         if(ready)
         {
@@ -547,7 +548,8 @@ static void App_ism330(void * p_arg)
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
         FlagPendError_Callback(FLG_ISM330, error);
         OS_ENTER_CRITICAL()
-            ready = GetGXLData_ism330(Val_ism330.s1);
+        //    ready = GetGXLData_ism330(Val_ism330.s1);
+				ready = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
         OS_EXIT_CRITICAL()
         if(ready)
         {
