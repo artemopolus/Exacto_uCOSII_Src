@@ -87,27 +87,40 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 {
     if(!bmp280.Whoami) return 0;
 	OS_CPU_SR cpu_sr = 0;
+	uint8_t trg1 = 0;
+	uint8_t trg2 = 0;
 	switch(mode)
 	{
-		case 0:
-			//0100 0100
-			
-		OS_ENTER_CRITICAL()
-//		write_lsm303ah(LSM303AH_CTRL1_A,0x44);
-//		uint8_t ctrl1 = read_lsm303ah(LSM303AH_CTRL1_A);
-		// 101 010 11
-		write_bmp280(BMP280_CTRL_MEAS_ADDR,0xab);
-		uint8_t ctrl = read_bmp280(BMP280_CTRL_MEAS_ADDR);
-		// tsb 000 fltr 0000 spi3 0
-		write_bmp280(BMP280_CONFIG_ADDR,0x00);
-		uint8_t ctrl2 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
-		OS_EXIT_CRITICAL()
-		if((ctrl == 0xab)&&(ctrl2 == 0x00))
-			return 1;
-		else
+		case 0:		
+			// 101 010 11
+			trg1 = 0xab;
+			// tsb 000 fltr 0000 spi3 0
+			trg2 = 0x00;
+			break;
+		default:
 			return 0;
 	}
-	return 0;
+	OS_ENTER_CRITICAL()
+	write_bmp280(BMP280_CTRL_MEAS_ADDR,trg1);
+	uint8_t ctrl = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+	write_bmp280(BMP280_CONFIG_ADDR,trg2);
+	uint8_t ctrl2 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+	OS_EXIT_CRITICAL()
+	if((ctrl == trg1)&&(ctrl2 == trg2))
+	{
+		switch(mode)
+		{
+			case 0:
+				OS_ENTER_CRITICAL()
+				bmp280.TDiscr = OS_TIME_1mS*38;
+				OS_EXIT_CRITICAL()
+				SendStr((int8_t*)"SETFREQ:bmp280:38ms\n");
+				break;
+		}
+		return 1;
+	}
+	else
+		return 0;
 }
 uint8_t Exacto_getfrq_lsm303ah(void)
 {
