@@ -90,6 +90,8 @@ s8*   pTx;              //  Указатель для передачи в обр
 uint8_t * pTxFixLength;
 uint8_t pTxFixLengthCnt = 0;
 uint8_t pTxFixLength_i = 0;
+uint8_t ModeTx = 0;
+
 //EVENTS
 OS_EVENT * pMailStm32;
 CmdToStm32 bMailStm32;
@@ -779,41 +781,47 @@ void SendStr(s8* ptr) { //  Неплохо бы проверять параме�
 u8 err;        //  Для кода завершения
   OSSemPend(pUart,0,&err);  //  Свободен ли UART?  
   pTx=ptr;                  //  Да, передача адреса строки символов 
+	ModeTx = 0;
   USART_ITConfig(USART2, USART_IT_TXE, ENABLE); //  разрешить запрос от Тх
 }
 void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
 {
-    uint8_t err;
-    OSSemPend(pUart,0,&err);
-    pTxFixLength = ptr;
-    pTxFixLengthCnt = cnt;
-    pTxFixLength_i = 0;
-    USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+	uint8_t err;
+	OSSemPend(pUart,0,&err);
+	pTxFixLength = ptr;
+	pTxFixLengthCnt = cnt;
+	pTxFixLength_i = 0;
+	ModeTx = 1;
+	USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
 }
 
 // --------------- Обработчик прерывания от USART1 -------------------
 void USART2_IRQHandler(void) {
     if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET)
     {
-        if(*pTx!=0)
-            USART_SendData(USART2, *pTx++);
-        else 
-        {   
-            if(pTxFixLengthCnt == 0)
-            {                
-                USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-                pTx = 0;
-                OSSemPost(pUart);
+				switch(ModeTx)
+				{
+					case 0:
+						if(*pTx!=0)
+							USART_SendData(USART2, *pTx++);
+						else 
+						{
+							USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+							pTx = 0;
+							OSSemPost(pUart);
             }
-        }
-        if(pTxFixLengthCnt != pTxFixLength_i)
-            USART_SendData(USART2, pTxFixLength[pTxFixLength_i++]);
-        else
-        {
-            USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-            pTxFixLength = 0;
-            OSSemPost(pUart);
-        }
+						break;
+					case 1:
+						if(pTxFixLengthCnt != pTxFixLength_i)
+								USART_SendData(USART2, pTxFixLength[pTxFixLength_i++]);
+						else
+						{
+								USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+								pTxFixLength = 0;
+								OSSemPost(pUart);
+						}
+						break;
+				}
     }
     if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
     {
