@@ -43,7 +43,7 @@ extern      CPU_FNCT_VOID BSP_IntVectTbl[];           //  для отладки
 //  Определения этих функций смотрите далее в этом файле 
 static  void  App_TaskStart    (void *p_arg);
 
-ExactoLBIdata buffer;
+ExactoLBIdata ExactoBuffer;
 
 const uint8_t CntExactoStm32States =   10;
 uint8_t * ExactoStm32States;
@@ -600,7 +600,7 @@ static void App_Messager(void * p_arg)
         }
         if(flags)
         {
-            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& buffer, ExactoLBIdata2send);
+            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send);
             if(Cnt_ExactoLBIdata2send > 3)
             {
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';

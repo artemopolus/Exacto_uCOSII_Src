@@ -12,7 +12,7 @@ extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
 extern OS_EVENT * pEvSensorBuff;
-extern ExactoLBIdata buffer;
+extern ExactoLBIdata ExactoBuffer;
 extern INT16U BaseDelay;
 
 uint8_t Exacto_getfrq_lsm303ah(void);
@@ -95,6 +95,25 @@ void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
     }
 }
 
+void SensorData2lsm303(SensorData * src)
+{
+	uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303;
+	for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
+	for(i = 6; i < 12 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
+	ExactoBuffer.cnt_lsm303 += 12;
+}
+void SensorData2bmp280(SensorData * src)
+{
+	uint8_t i = 0, pData = ExactoBuffer.cnt_bmp280;
+	for(i = 0; i < 6 ; i++) ExactoBuffer.bmp280[pData + i] = src->s1[i];
+	ExactoBuffer.cnt_bmp280 += 6;
+}
+void SensorData2ism330(SensorData * src)
+{
+	uint8_t i = 0, pData = ExactoBuffer.cnt_ism330;
+	for(i = 0; i < 14 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->sL[i];
+	ExactoBuffer.cnt_ism330 += 14;
+}
 
 void App_stm32(void * p_arg)
 {
@@ -293,9 +312,9 @@ void        App_buffer(void * p_arg)
 {
     SensorData * ValInput;
 	uint8_t err;
-    buffer.cnt_lsm303 = 0;
-    buffer.cnt_bmp280 = 0;
-    buffer.cnt_ism330 = 0;
+    ExactoBuffer.cnt_lsm303 = 0;
+    ExactoBuffer.cnt_bmp280 = 0;
+    ExactoBuffer.cnt_ism330 = 0;
     while(DEF_TRUE)
     {
         ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
@@ -304,20 +323,23 @@ void        App_buffer(void * p_arg)
             switch(ValInput->pSensor)
             {
                 case FLG_LSM303:
-                    SetData2exactoLBIdata(ValInput->s1, buffer.lsm303, &buffer.cnt_lsm303);
+                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.lsm303, &ExactoBuffer.cnt_lsm303);
+										SensorData2lsm303(ValInput);
                     break;
                 case FLG_BMP280:
-                    SetData2exactoLBIdata(ValInput->s1, buffer.bmp280, &buffer.cnt_bmp280);
+                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.bmp280, &ExactoBuffer.cnt_bmp280);
+										SensorData2bmp280(ValInput);
                     break;
                 case FLG_ISM330:
-                    SetData2exactoLBIdata(ValInput->s1, buffer.ism330, &buffer.cnt_ism330);
+                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.ism330, &ExactoBuffer.cnt_ism330);
+										SensorData2ism330(ValInput);
                     break;
             }
-            if((buffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
-                ||(buffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
-                ||(buffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
+            if((ExactoBuffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
+                ||(ExactoBuffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
+                ||(ExactoBuffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
             {
-                ExactoLBIdataCLR(&buffer);
+                ExactoLBIdataCLR(&ExactoBuffer);
                 SendStr((int8_t*)"AP_BUFF:FORCE_BUFFER_CLR\n");
             }
         }
