@@ -583,6 +583,8 @@ static void App_Messager(void * p_arg)
     INT8U err;
     uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
     uint8_t Cnt_ExactoLBIdata2send = 0;
+    uint8_t headerCNT[5];
+    headerCNT[0] = 'h';
     while(DEF_TRUE)
     {
         CounterDelay++;
@@ -604,8 +606,12 @@ static void App_Messager(void * p_arg)
             if(Cnt_ExactoLBIdata2send > 3)
             {
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
-                SendStr((int8_t*)"h");
-                //SendStr((s8*)ExactoLBIdata2send);
+                headerCNT[1] = (uint8_t)CounterDelay << 24;
+                headerCNT[2] = (uint8_t)CounterDelay << 16;
+                headerCNT[3] = (uint8_t)CounterDelay << 8;
+                headerCNT[4] = (uint8_t)CounterDelay;
+                //SendStr((int8_t*)"h");
+                SendStr((s8*)headerCNT);
                 SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
                 SendStr((int8_t*)"\n");
             }
