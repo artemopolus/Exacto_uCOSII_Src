@@ -300,10 +300,17 @@ uint8_t Exacto_init_lsm303ah(void)
 }
 uint8_t Exacto_init_bmp280(void)
 {
+    OS_CPU_SR cpu_sr = 0;
+  OS_ENTER_CRITICAL()
 	ClockEnPinsI2C_bmp280();
+    
     ConfigurePinsI2C_bmp280();
+    
     ConfigureI2C_bmp280();
+    
+    
     ActivateI2C_bmp280();
+    OS_EXIT_CRITICAL()
     return (GetWhoami_bmp280());
 }
 uint8_t Exacto_init_ism330(void)
