@@ -222,7 +222,8 @@ void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
 }
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr)
 {
-	OS_CPU_SR cpu_sr = 0;
+		uint8_t flgerr = 0;
+		OS_CPU_SR cpu_sr = 0;
     if(RegAdr >= CntExactoStm32States)
         return;
     ExactoStm32States[RegAdr] = RegVal;
@@ -235,12 +236,12 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     OSFlagPost( pFlgSensors,
                                             FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
                                             OS_FLAG_CLR,
-                                            perr);
-                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: waiting\n");
+                                            &flgerr);
+                    if(flgerr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: waiting\n");
                     else
                     {
                         SendStr((int8_t*)"SWITCH_ERR:ALLWAITING_ESM\n");
-                        uCOSFlagPost_Callback(perr);
+                        uCOSFlagPost_Callback(&flgerr);
                     }
                     break;
                 case ONLYLSM303_ESM:

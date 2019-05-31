@@ -25,7 +25,9 @@
 //#define PING_MODE
 #define UARTMAXWORDLEN   80
 
-
+volatile ExactoSensorSet lsm303;
+ExactoSensorSet bmp280;
+ExactoSensorSet ism330;
 
 INT16U BaseDelay = OS_TICKS_PER_SEC;
 
@@ -45,26 +47,25 @@ static  void  App_TaskStart    (void *p_arg);
 
 ExactoLBIdata ExactoBuffer;
 
+
 const uint8_t CntExactoStm32States =   10;
 uint8_t * ExactoStm32States;
-void SetInitExactoStm32States(void)
-{
-    ExactoStm32States = (uint8_t *)calloc(CntExactoStm32States, sizeof(uint8_t));
-}
+
 
 
 
 //TASKS
-ExactoSensorSet lsm303;
+
+
 OS_STK  Stk_App_lsm303[APP_TASK_STK_SIZE];
 static void App_lsm303(void * p_arg);
 OS_FLAG_GRP * pFlgSensors;
 
-ExactoSensorSet bmp280;
+
 OS_STK  Stk_App_bmp280[APP_TASK_STK_SIZE];
 static void App_bmp280(void * p_arg);
 
-ExactoSensorSet ism330;
+
 OS_STK	Stk_App_ism330[APP_TASK_STK_SIZE];
 static void App_ism330(void * p_arg);
 
@@ -156,11 +157,15 @@ uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst);
 
 
 
-
-void setInitExactoSensorSet(ExactoSensorSet * dst, char * name, uint8_t flg, uint8_t tdiscr)
+void SetInitExactoStm32States(void)
+{
+    ExactoStm32States = (uint8_t *)calloc(CntExactoStm32States, sizeof(uint8_t));
+}
+void setInitExactoSensorSet( volatile ExactoSensorSet * dst, char * name, uint8_t flg, uint8_t tdiscr)
 {
     dst->Whoami = 0x00;
-    strcpy(dst->Name,name);
+		dst->initFreq = 0x00;
+    //strcpy(dst->Name,name);
     dst->flgSens = flg;
     dst->TDiscr = tdiscr;
 }
@@ -421,7 +426,7 @@ static  void  App_TaskStart (void *p_arg)
 
 static void App_lsm303(void * p_arg)
 {
-    ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
+    //ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
     OS_FLAGS flValue;
@@ -431,12 +436,18 @@ static void App_lsm303(void * p_arg)
     {
 //        Parameters->Whoami = 1;
 //        strcpy(Parameters->Name,"lsm330");  
-        lsm303.Whoami = 1;        
+        lsm303.Whoami = 0x01;        
         if(!Exacto_setfrq_lsm303ah(0))
         {
             __NOP();
             SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
+					
         }
+				else
+				{
+					//strcpy(lsm303.Name,"lsm330"); 
+					lsm303.initFreq = 0x01;
+				}
     }
     else
     {
@@ -468,7 +479,7 @@ static void App_lsm303(void * p_arg)
                 __NOP();
                 SendStr((int8_t*)"OS_Q_CNTWRN:lsm303\n");
             }
-            OSTimeDly(Parameters->TDiscr);
+            OSTimeDly(lsm303.TDiscr);
         }
         else OSTimeDly(OS_TIME_1mS);
     }

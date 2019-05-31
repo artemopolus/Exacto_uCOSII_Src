@@ -19,7 +19,7 @@
 #include "exacto_struct.h"
 #include "exacto_defs.h"
 
-extern ExactoSensorSet lsm303;
+extern volatile ExactoSensorSet lsm303;
 extern ExactoSensorSet bmp280;
 extern ExactoSensorSet ism330;
 
