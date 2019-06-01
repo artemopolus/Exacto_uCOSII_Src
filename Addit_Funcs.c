@@ -101,10 +101,21 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode)
 			return 0;
 	}
 	OS_ENTER_CRITICAL()
-	write_bmp280(BMP280_CTRL_MEAS_ADDR,trg1);
-	uint8_t ctrl = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+	
+//	uint8_t cnt = 0;
+	uint8_t ctrl;
+	
+//	EnReset_bmp280();
+	
+//DsReset_bmp280();
+	
+	setval_bmp280(BMP280_CTRL_MEAS_ADDR,trg1);
+
+	ctrl = getval_bmp280(BMP280_CTRL_MEAS_ADDR);
+
 	write_bmp280(BMP280_CONFIG_ADDR,trg2);
-	uint8_t ctrl2 = read_bmp280(BMP280_CTRL_MEAS_ADDR);
+	
+	uint8_t ctrl2 = getval_bmp280(BMP280_CONFIG_ADDR);
 	OS_EXIT_CRITICAL()
 	if((ctrl == trg1)&&(ctrl2 == trg2))
 	{

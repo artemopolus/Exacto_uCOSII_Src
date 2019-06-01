@@ -71,7 +71,7 @@ uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
 
 uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst)
 {
-    if(src->cnt_lsm303 && src->cnt_bmp280 && src->cnt_ism330)   return 0;
+    if(!(src->cnt_lsm303 || src->cnt_bmp280 || src->cnt_ism330))   return 0;
     dst[0] = src->cnt_lsm303;
     dst[1] = src->cnt_bmp280;
     dst[2] = src->cnt_ism330;

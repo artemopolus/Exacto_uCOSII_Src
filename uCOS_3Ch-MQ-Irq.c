@@ -494,7 +494,8 @@ static void App_bmp280(void * p_arg)
     Val_bmp280.pSensor = FLG_BMP280;
     if(Exacto_init_bmp280())
     {
-        bmp280.Whoami = 1;
+      bmp280.Whoami = 1;
+			OSTimeDly(OS_TIME_10mS);
         if(!Exacto_setfrq_bmp280(0))
         {
             __NOP();
