@@ -25,6 +25,10 @@
 //#define PING_MODE
 #define UARTMAXWORDLEN   80
 
+#define FAKE_ISM330
+#define FAKE_BMP280
+#define FAKE_LSM303
+
 volatile ExactoSensorSet lsm303;
 ExactoSensorSet bmp280;
 ExactoSensorSet ism330;
@@ -154,7 +158,9 @@ uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegVa
 
 uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst);
 
-
+uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
+uint8_t FakeEx_bmp280(uint8_t * src1 ){for(uint8_t i = 1; i < 7;i++) {src1[i] = i;}return 1;}
+uint8_t FakeEx_ism330(uint8_t * src1 ){for(uint8_t i = 1; i < 15;i++) {src1[i] = i;}return 1;}
 
 
 void SetInitExactoStm32States(void)
@@ -463,7 +469,11 @@ static void App_lsm303(void * p_arg)
         FlagPendError_Callback(FLG_LSM303, error);
         OS_ENTER_CRITICAL()
 				//ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
+			#ifdef FAKE_LSM303
+				ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
+			#else
 				ready = Get_XL_M_uint8_lsm303ah(Val_lsm303.s1,Val_lsm303.s2);
+			#endif
         OS_EXIT_CRITICAL()
         if(ready)
         {
@@ -481,7 +491,8 @@ static void App_lsm303(void * p_arg)
             }
             OSTimeDly(lsm303.TDiscr);
         }
-        else OSTimeDly(OS_TIME_1mS);
+        //else OSTimeDly(OS_TIME_1mS);
+				else OSTimeDly(lsm303.TDiscr);
     }
 }
 static void App_bmp280(void * p_arg)
@@ -513,7 +524,11 @@ static void App_bmp280(void * p_arg)
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
         FlagPendError_Callback(FLG_BMP280, error);
         OS_ENTER_CRITICAL()
+			#ifdef FAKE_BMP280
+				ready = FakeEx_bmp280(Val_bmp280.s1);
+			#else
         ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
+			#endif
         OS_EXIT_CRITICAL()
         if(ready)
         {
@@ -531,7 +546,8 @@ static void App_bmp280(void * p_arg)
             }
             OSTimeDly(Parameters->TDiscr);
         }
-        else OSTimeDly(OS_TIME_1mS);
+        //else OSTimeDly(OS_TIME_1mS);
+				else OSTimeDly(Parameters->TDiscr);
     }
 }
 static void App_ism330(void * p_arg)
@@ -563,7 +579,11 @@ static void App_ism330(void * p_arg)
         FlagPendError_Callback(FLG_ISM330, error);
         OS_ENTER_CRITICAL()
         //    ready = GetGXLData_ism330(Val_ism330.s1);
+			#ifdef FAKE_ISM330
+				ready = FakeEx_ism330(Val_ism330.sL);
+			#else		
 				ready = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
+			#endif
         OS_EXIT_CRITICAL()
         if(ready)
         {
@@ -581,7 +601,8 @@ static void App_ism330(void * p_arg)
             }
             OSTimeDly(Parameters->TDiscr);
         }
-    else OSTimeDly(OS_TIME_1mS);
+    //else OSTimeDly(OS_TIME_1mS);
+				OSTimeDly(Parameters->TDiscr);
     }
 }
 
@@ -661,28 +682,31 @@ static void App_UartRxBuffParser(void *p_arg)
 
     while(DEF_TRUE)
     {
-        UartRxValue=(int8_t)OSQPend(pEvUartRxBuff,0,&error);
-			switch(error)
-			{
-				case OS_ERR_TIMEOUT:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_TIMEOUT\n");
-					break;
-				case OS_ERR_PEND_ABORT:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ABORT\n");
-					break;
-                case OS_ERR_EVENT_TYPE:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_EVENT_TYPE\n");
-					break;
-                case OS_ERR_PEVENT_NULL:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_PEVENT_NULL\n");
-					break;
-                case OS_ERR_PEND_ISR:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ISR\n");
-					break;
-                case OS_ERR_PEND_LOCKED:
-                    SendStr((int8_t*)"UART_RX:OS_ERR_PEND_LOCKED\n");
-					break;
-			}
+        UartRxValue=(int8_t)OSQPend(pEvUartRxBuff,OS_TIME_2S,&error);
+				switch(error)
+				{
+					case OS_ERR_TIMEOUT:
+						//					SendStr((int8_t*)"UART_RX:OS_ERR_TIMEOUT\n");
+						__NOP();
+						break;
+					case OS_ERR_PEND_ABORT:
+											SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ABORT\n");
+						break;
+									case OS_ERR_EVENT_TYPE:
+											SendStr((int8_t*)"UART_RX:OS_ERR_EVENT_TYPE\n");
+						break;
+									case OS_ERR_PEVENT_NULL:
+											SendStr((int8_t*)"UART_RX:OS_ERR_PEVENT_NULL\n");
+						break;
+									case OS_ERR_PEND_ISR:
+											SendStr((int8_t*)"UART_RX:OS_ERR_PEND_ISR\n");
+						break;
+									case OS_ERR_PEND_LOCKED:
+											SendStr((int8_t*)"UART_RX:OS_ERR_PEND_LOCKED\n");
+						break;
+				}
+				if(error == OS_ERR_NONE)
+				{
         pshfrc_exbu8(&UartRxBuffer,UartRxValue);
         if(grball_exbu8(&UartRxBuffer, pData))
         {
@@ -760,7 +784,7 @@ static void App_UartRxBuffParser(void *p_arg)
                         }
                     }
                     else
-					{
+										{
                         SendStr((int8_t*)"\nWrite value:");
                         if(Exacto_sensor_write(TrgSens,RegAdr,RegVal))
                         {
@@ -772,7 +796,7 @@ static void App_UartRxBuffParser(void *p_arg)
                         {
                             SendStr((int8_t*)"can't write");
                         }
-					}
+										}
                     break;
                 case 0:
                     break;
@@ -790,6 +814,7 @@ static void App_UartRxBuffParser(void *p_arg)
         }
         
         SendStr((int8_t*)"\n");
+			}
     }
 }
 
@@ -844,9 +869,14 @@ void USART2_IRQHandler(void) {
     if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
     {
         uint8_t RxByte = USART_ReceiveData(USART2);
-        if (OSQPost(pEvUartRxBuff, ((void*)(RxByte)))==OS_Q_FULL)
+        switch (OSQPost(pEvUartRxBuff, ((void*)(RxByte))))
         {
-            __NOP();
+					case OS_Q_FULL:
+						__NOP();
+					break;
+					case OS_ERR_NONE:
+						__NOP();
+					break;
         }
         OSQQuery(pEvUartRxBuff, &infUartRxBuff);
         cntUartRxBuff = infUartRxBuff.OSNMsgs;

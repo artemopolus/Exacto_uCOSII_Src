@@ -46,7 +46,7 @@
 
 #define  APP_TASK_SEND_PRIO             11
 #define  APP_TASK_SEND1_PRIO            11
-#define  APP_TASK_UART_SEND_PRIO            13
+#define  APP_TASK_UART_SEND_PRIO            17
 #define APP_TASK_STM32_PRIO             15
 #define APP_TASK_BUFFER_PRIO            14                 
 

@@ -372,7 +372,7 @@ void Periph_Init(void)
 
     //  Настройка UART
     USART_InitTypeDef USART_InitStructure;      //  Задание настроечных параметров для USART1
-  USART_InitStructure.USART_BaudRate = 19200;   //  Скорость 19200 бит/с 
+  USART_InitStructure.USART_BaudRate = 115200;   //  Скорость 19200 бит/с 
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
   USART_InitStructure.USART_StopBits = USART_StopBits_1;
   USART_InitStructure.USART_Parity = USART_Parity_No;
@@ -474,7 +474,7 @@ void UART_init(void)
     gpioA.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_Init(GPIOA, &gpioA);
   USART_InitTypeDef USART_InitStructure;     
-    USART_InitStructure.USART_BaudRate = 19200;   
+    USART_InitStructure.USART_BaudRate = 115200;   
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
     USART_InitStructure.USART_StopBits = USART_StopBits_1;
     USART_InitStructure.USART_Parity = USART_Parity_No;
