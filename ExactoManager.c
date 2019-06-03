@@ -5,15 +5,22 @@
 
 extern OS_EVENT * pMailStm32;
 extern OS_FLAG_GRP * pFlgSensors;
-extern void SendStr(s8* ptr); 
-extern void SendStrFixLen(uint8_t * ptr, uint8_t cnt);
-extern s8* Dec_Convert(s8* buf, s32 value);
+extern OS_EVENT * pEvSensorBuff;
+
 extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
-extern OS_EVENT * pEvSensorBuff;
+
 extern ExactoLBIdata ExactoBuffer;
 extern INT16U BaseDelay;
+
+extern ExactoSensorSet lsm303;
+extern ExactoSensorSet bmp280;
+extern ExactoSensorSet ism330;
+
+extern void SendStr(s8* ptr); 
+extern void SendStrFixLen(uint8_t * ptr, uint8_t cnt);
+extern s8* Dec_Convert(s8* buf, s32 value);
 
 uint8_t Exacto_getfrq_lsm303ah(void);
 uint8_t Exacto_setfrq_lsm303ah(uint8_t mode);
@@ -26,9 +33,7 @@ uint8_t Exacto_getfrq_bmp280(void);
 uint8_t Exacto_setfrq_bmp280(uint8_t mode);
 
 
-extern ExactoSensorSet lsm303;
-extern ExactoSensorSet bmp280;
-extern ExactoSensorSet ism330;
+
 
 
 

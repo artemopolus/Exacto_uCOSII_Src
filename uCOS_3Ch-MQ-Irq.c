@@ -23,11 +23,18 @@
 
 #define ECHO_ALL
 //#define PING_MODE
-#define UARTMAXWORDLEN   80
-
 //#define FAKE_ISM330
 #define FAKE_BMP280
 #define FAKE_LSM303
+
+
+#define UARTMAXWORDLEN          80
+#define   QL                    10
+#define MAXCOUNTUARTRECEIVER    10
+#define MAXUARTRXBUFFER	        EXACTO_BUFLEN_16
+#define CNTSENSORBUFFER         30
+
+
 
 volatile ExactoSensorSet lsm303;
 ExactoSensorSet bmp280;
@@ -57,13 +64,26 @@ uint8_t * ExactoStm32States;
 
 
 
+//EVENTS
+OS_EVENT * pMailStm32;
+OS_EVENT *pQue;				  //  Указатель на Очередь
+OS_EVENT* pUart;        //  Указатель для Семафора (UART)
+OS_EVENT 	* pEvUartRxBuff;
+OS_EVENT * pEvSensorBuff;
+//5
+OS_FLAG_GRP * pFlgSensors;
+OS_EVENT  * pSlsm303;
+OS_EVENT  * pSbmp280;
+OS_EVENT  * pSism330;
+
+//10
 
 //TASKS
 
 
 OS_STK  Stk_App_lsm303[APP_TASK_STK_SIZE];
 static void App_lsm303(void * p_arg);
-OS_FLAG_GRP * pFlgSensors;
+
 
 
 OS_STK  Stk_App_bmp280[APP_TASK_STK_SIZE];
@@ -97,27 +117,28 @@ uint8_t pTxFixLengthCnt = 0;
 uint8_t pTxFixLength_i = 0;
 uint8_t ModeTx = 0;
 
-//EVENTS
-OS_EVENT * pMailStm32;
+
+
 CmdToStm32 bMailStm32;
 
-#define   QL    10
-OS_EVENT *pQue;				  //  Указатель на Очередь
+
+
+
 void *MsgQue[QL];			  //  Массив для Очереди
 OS_Q_DATA qData; 			  //  Структура для информации об Очереди
-OS_EVENT* pUart;        //  Указатель для Семафора (UART)
+
 u16 cQn;                //  Элементов в Очереди
 
-#define MAXCOUNTUARTRECEIVER 10
-OS_EVENT 	* pEvUartRxBuff;
+
+
 void			* pArUartRxBuff[MAXCOUNTUARTRECEIVER];
 OS_Q_DATA 	infUartRxBuff;
 //OS_EVENT 	* flgUartRxBuff;
 uint16_t		cntUartRxBuff;
-#define MAXUARTRXBUFFER	EXACTO_BUFLEN_16
 
-#define CNTSENSORBUFFER   30
-OS_EVENT * pEvSensorBuff;
+
+
+
 void *pSensorBuff[CNTSENSORBUFFER];
 OS_Q_DATA infSensorBuff;
 uint16_t cntSensorBuff;
@@ -278,11 +299,31 @@ static  void  App_TaskStart (void *p_arg)
   OS_CPU_SysTickInit();
   
     uint8_t errorParser;
-		pEvUartRxBuff = OSQCreate(&pArUartRxBuff[0],MAXCOUNTUARTRECEIVER);
+	pEvUartRxBuff = OSQCreate(&pArUartRxBuff[0],MAXCOUNTUARTRECEIVER);
+    if(pEvUartRxBuff == (OS_EVENT *)0 )
+    {
+        __NOP();
+    }
     pEvSensorBuff = OSQCreate(&pSensorBuff[0],CNTSENSORBUFFER);
+    if(pEvSensorBuff == (OS_EVENT *)0 )
+    {
+        __NOP();
+    }
     pUart = OSSemCreate(1);             //  Создадим семафор для UART
+    if(pUart == (OS_EVENT *)0 )
+    {
+        __NOP();
+    }
     pFlgSensors = OSFlagCreate(0x00,&errorParser);
+    if(errorParser != OS_ERR_NONE)
+    {
+        __NOP();
+    }
     pMailStm32 = OSMboxCreate((void*)0);
+    if(pMailStm32 == (OS_EVENT *)0 )
+    {
+        __NOP();
+    }
   
   
   switch(OSTaskCreate((void (*)(void *)) App_Messager,  
@@ -600,12 +641,12 @@ static void App_ism330(void * p_arg)
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
 //        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
 
-				flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
-			if(error == OS_ERR_NONE)
-			{
+		flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
+		if(error == OS_ERR_NONE)
+		{
         //FlagPendError_Callback(FLG_ISM330, error);
-				for(uint8_t i = 0; i < 3; i++)
-			{
+		for(uint8_t i = 0; i < 3; i++)
+		{
         OS_ENTER_CRITICAL()
         //    ready = GetGXLData_ism330(Val_ism330.s1);
 			#ifdef FAKE_ISM330
@@ -614,8 +655,8 @@ static void App_ism330(void * p_arg)
 				ready = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
 			#endif
         OS_EXIT_CRITICAL()
-				if(ready) break;
-			}
+			if(ready) break;
+		}
         if(ready)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
@@ -633,8 +674,8 @@ static void App_ism330(void * p_arg)
             //OSTimeDly(Parameters->TDiscr);
         }
     //else OSTimeDly(OS_TIME_1mS);
-				OSTimeDly(Parameters->TDiscr);
-			}
+		OSTimeDly(Parameters->TDiscr);
+		}
     }
 }
 
@@ -863,6 +904,10 @@ void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
 {
 	uint8_t err;
 	OSSemPend(pUart,0,&err);
+    if(err != OS_ERR_NONE)
+    {
+        __NOP();
+    }
 	pTxFixLength = ptr;
 	pTxFixLengthCnt = cnt;
 	pTxFixLength_i = 0;
