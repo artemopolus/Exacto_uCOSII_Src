@@ -37,8 +37,8 @@
 
 
 volatile ExactoSensorSet lsm303;
-ExactoSensorSet bmp280;
-ExactoSensorSet ism330;
+volatile ExactoSensorSet bmp280;
+volatile ExactoSensorSet ism330;
 
 INT16U BaseDelay = OS_TICKS_PER_SEC;
 
@@ -79,32 +79,25 @@ OS_EVENT  * pSism330;
 //10
 
 //TASKS
+static void App_lsm303(void * p_arg);
+static void App_bmp280(void * p_arg);
+static void App_ism330(void * p_arg);
+static void App_Messager(void *p_arg);
+static void App_UartRxBuffParser(void *p_arg);
+//5
+void App_stm32(void * p_arg);
+void        App_buffer(void * p_arg);
 
 
 OS_STK  Stk_App_lsm303[APP_TASK_STK_SIZE];
-static void App_lsm303(void * p_arg);
-
-
-
 OS_STK  Stk_App_bmp280[APP_TASK_STK_SIZE];
-static void App_bmp280(void * p_arg);
-
-
 OS_STK	Stk_App_ism330[APP_TASK_STK_SIZE];
-static void App_ism330(void * p_arg);
-
-
 OS_STK  Stk_App_Messager[APP_TASK_STK_SIZE];
-static void App_Messager(void *p_arg);
-
 OS_STK  Stk_App_UartRxBuffParser[APP_TASK_STK_SIZE];
-static void App_UartRxBuffParser(void *p_arg);
-
+//5
 OS_STK  Stk_App_stm32[APP_TASK_STK_SIZE];
-void App_stm32(void * p_arg);
-
 OS_STK  Stk_App_buffer[APP_TASK_STK_SIZE];
-void        App_buffer(void * p_arg);
+
 
 unsigned char cTicks;   //  Служебная для наблюдения "тиков"
 u8 ucSend=0, ucSend1=0, ucSend2=0;  //  Длит.передачи в UART
