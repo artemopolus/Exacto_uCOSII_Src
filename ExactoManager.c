@@ -6,6 +6,7 @@
 extern OS_EVENT * pMailStm32;
 extern OS_FLAG_GRP * pFlgSensors;
 extern OS_EVENT * pEvSensorBuff;
+extern OS_EVENT  * pSism330;
 
 extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
@@ -271,6 +272,7 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             perr);
 									if(tmp_flg != 0x07)
 										__NOP();
+                    OSSemPost(pSism330);
                     if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
                     else
                     {

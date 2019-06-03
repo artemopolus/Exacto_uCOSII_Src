@@ -317,6 +317,11 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
+    pSism330 = OSSemCreate(0); 
+    if(pSism330 == (OS_EVENT *)0 )
+    {
+        __NOP();
+    }
   
   
   switch(OSTaskCreate((void (*)(void *)) App_Messager,  
