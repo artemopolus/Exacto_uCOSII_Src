@@ -223,6 +223,7 @@ void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr)
 {
 		uint8_t flgerr = 0;
+		OS_FLAGS tmp_flg;
 		OS_CPU_SR cpu_sr = 0;
     if(RegAdr >= CntExactoStm32States)
         return;
@@ -258,10 +259,13 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     }
                     break;
                 case ALLRUNNING_ESM:
-                    OSFlagPost( pFlgSensors,
-                                            FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+									
+                    tmp_flg = OSFlagPost( pFlgSensors,
+                                            (OS_FLAGS)0x07,
                                             OS_FLAG_SET,
                                             perr);
+									if(tmp_flg != 0x07)
+										__NOP();
                     if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
                     else
                     {

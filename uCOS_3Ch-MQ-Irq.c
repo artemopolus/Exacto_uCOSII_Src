@@ -25,7 +25,7 @@
 //#define PING_MODE
 #define UARTMAXWORDLEN   80
 
-#define FAKE_ISM330
+//#define FAKE_ISM330
 #define FAKE_BMP280
 #define FAKE_LSM303
 
@@ -467,14 +467,18 @@ static void App_lsm303(void * p_arg)
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:lsm303\n");
         FlagPendError_Callback(FLG_LSM303, error);
-        OS_ENTER_CRITICAL()
+				for(uint8_t i = 0; i < 3; i++)
+				{
+					OS_ENTER_CRITICAL()
 				//ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
 			#ifdef FAKE_LSM303
-				ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
+					ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
 			#else
-				ready = Get_XL_M_uint8_lsm303ah(Val_lsm303.s1,Val_lsm303.s2);
+					ready = Get_XL_M_uint8_lsm303ah_fst(Val_lsm303.s1,Val_lsm303.s2);
 			#endif
-        OS_EXIT_CRITICAL()
+					OS_EXIT_CRITICAL()
+					if(ready) break;
+				}
         if(ready)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
@@ -489,10 +493,11 @@ static void App_lsm303(void * p_arg)
                 __NOP();
                 SendStr((int8_t*)"OS_Q_CNTWRN:lsm303\n");
             }
-            OSTimeDly(lsm303.TDiscr);
+            
         }
         //else OSTimeDly(OS_TIME_1mS);
-				else OSTimeDly(lsm303.TDiscr);
+				//else OSTimeDly(lsm303.TDiscr);
+				OSTimeDly(lsm303.TDiscr);
     }
 }
 static void App_bmp280(void * p_arg)
@@ -500,7 +505,7 @@ static void App_bmp280(void * p_arg)
     ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
-    OS_FLAGS flValue;
+    uint8_t flValue;
     SensorData Val_bmp280;
     Val_bmp280.pSensor = FLG_BMP280;
     if(Exacto_init_bmp280())
@@ -512,6 +517,16 @@ static void App_bmp280(void * p_arg)
             __NOP();
             SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
         }
+				else
+				{
+//					EnReset_bmp280();
+					OSTimeDly(OS_TIME_10mS);
+//					DsReset_bmp280();
+//					OSTimeDly(OS_TIME_10mS);
+//					EnReset_bmp280();
+//					OSTimeDly(OS_TIME_10mS);
+//					DsReset_bmp280();
+				}
     }
     else
     {
@@ -523,13 +538,21 @@ static void App_bmp280(void * p_arg)
         flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
         FlagPendError_Callback(FLG_BMP280, error);
+			for(uint8_t i =0; i <3;i++)
+			{
         OS_ENTER_CRITICAL()
+				OSTimeDly(OS_TIME_1mS);
 			#ifdef FAKE_BMP280
 				ready = FakeEx_bmp280(Val_bmp280.s1);
 			#else
-        ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
+        //ready = GetPresTempValuesUint8_bmp280(Val_bmp280.s1);
+				ready = getval_bmp280(BMP280_STATUS_ADDR);
+				if(ready )
+					getMultiVal_bmp280(BMP280_PRES_MSB_ADDR, Val_bmp280.s1, 6);
 			#endif
         OS_EXIT_CRITICAL()
+				if(ready) break;
+			}
         if(ready)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
@@ -544,10 +567,10 @@ static void App_bmp280(void * p_arg)
                 __NOP();
                 SendStr((int8_t*)"OS_Q_CNTWRN:bmp280\n");
             }
-            OSTimeDly(Parameters->TDiscr);
+            //OSTimeDly(Parameters->TDiscr);
         }
         //else OSTimeDly(OS_TIME_1mS);
-				else OSTimeDly(Parameters->TDiscr);
+				OSTimeDly(Parameters->TDiscr);
     }
 }
 static void App_ism330(void * p_arg)
@@ -574,9 +597,15 @@ static void App_ism330(void * p_arg)
     }
     while(DEF_TRUE)
     {
-        flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ALL,0,&error);
-        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
-        FlagPendError_Callback(FLG_ISM330, error);
+//        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
+//        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
+
+				flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
+			if(error == OS_ERR_NONE)
+			{
+        //FlagPendError_Callback(FLG_ISM330, error);
+				for(uint8_t i = 0; i < 3; i++)
+			{
         OS_ENTER_CRITICAL()
         //    ready = GetGXLData_ism330(Val_ism330.s1);
 			#ifdef FAKE_ISM330
@@ -585,6 +614,8 @@ static void App_ism330(void * p_arg)
 				ready = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
 			#endif
         OS_EXIT_CRITICAL()
+				if(ready) break;
+			}
         if(ready)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
@@ -599,10 +630,11 @@ static void App_ism330(void * p_arg)
                 __NOP();
                 SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
             }
-            OSTimeDly(Parameters->TDiscr);
+            //OSTimeDly(Parameters->TDiscr);
         }
     //else OSTimeDly(OS_TIME_1mS);
 				OSTimeDly(Parameters->TDiscr);
+			}
     }
 }
 
