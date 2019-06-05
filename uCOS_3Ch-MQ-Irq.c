@@ -23,9 +23,9 @@
 
 #define ECHO_ALL
 //#define PING_MODE
-//#define FAKE_ISM330
+#define FAKE_ISM330
 #define FAKE_BMP280
-#define FAKE_LSM303
+//#define FAKE_LSM303
 
 
 #define UARTMAXWORDLEN          80
@@ -482,6 +482,7 @@ static void App_lsm303(void * p_arg)
 //        Parameters->Whoami = 1;
 //        strcpy(Parameters->Name,"lsm330");  
         lsm303.Whoami = 0x01;        
+				OSTimeDly(OS_TIME_1mS);
         if(!Exacto_setfrq_lsm303ah(0))
         {
             __NOP();
@@ -629,6 +630,10 @@ static void App_ism330(void * p_arg)
             __NOP();
             SendStr((int8_t*)"ERRSET:ism330 set freq\n");
         }
+				else
+				{
+					ism330.initFreq = 0x01;
+				}
     }
     else
     {
@@ -674,6 +679,7 @@ static void App_ism330(void * p_arg)
     //else OSTimeDly(OS_TIME_1mS);
 		OSTimeDly(Parameters->TDiscr);
 		}
+		OSTimeDly(Parameters->TDiscr);
     }
 }
 

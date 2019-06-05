@@ -267,7 +267,7 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                 case ALLRUNNING_ESM:
 									
                     tmp_flg = OSFlagPost( pFlgSensors,
-                                            (OS_FLAGS)0x07,
+                                            FLG_LSM303 + FLG_BMP280 + FLG_ISM330,
                                             OS_FLAG_SET,
                                             perr);
 									if(tmp_flg != 0x07)
