@@ -26,6 +26,8 @@
 #define FAKE_ISM330
 #define FAKE_BMP280
 //#define FAKE_LSM303
+#define ENABLE_LSM303_XL
+#define ENABLE_LSM303_M
 
 
 #define UARTMAXWORDLEN          80
@@ -34,7 +36,9 @@
 #define MAXUARTRXBUFFER	        EXACTO_BUFLEN_16
 #define CNTSENSORBUFFER         30
 
-
+ExactoBufferUint8Type ExBufLSM303;
+ExactoBufferUint8Type ExBufBMP280;
+ExactoBufferUint8Type ExBufISM330;
 
 volatile ExactoSensorSet lsm303;
 volatile ExactoSensorSet bmp280;
@@ -370,6 +374,9 @@ static  void  App_TaskStart (void *p_arg)
     {
         case OS_ERR_NONE:
             __NOP();
+            setini_exbu8(&ExBufLSM303, EXACTO_BUFLEN_256);
+            setini_exbu8(&ExBufBMP280, EXACTO_BUFLEN_256);
+            setini_exbu8(&ExBufISM330, EXACTO_BUFLEN_256);
             break;
         case OS_ERR_PRIO_EXIST:
             __NOP();
@@ -471,35 +478,28 @@ static  void  App_TaskStart (void *p_arg)
 
 static void App_lsm303(void * p_arg)
 {
-    //ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
     OS_FLAGS flValue;
-	
-    //SensorParameters splsm330;
     if(Exacto_init_lsm303ah())
-    {
-//        Parameters->Whoami = 1;
-//        strcpy(Parameters->Name,"lsm330");  
+    { 
         lsm303.Whoami = 0x01;        
 				OSTimeDly(OS_TIME_1mS);
         if(!Exacto_setfrq_lsm303ah(0))
         {
             __NOP();
-            SendStr((int8_t*)"ERRSET:lsm303 set freq\n");
-					
+            SendStr((int8_t*)"ERRSET:lsm303 set freq\n");					
         }
-				else
-				{
-					//strcpy(lsm303.Name,"lsm330"); 
-					lsm303.initFreq = 0x01;
-				}
+        else
+        {
+            lsm303.initFreq = 0x01;
+        }
     }
     else
     {
         OSTaskDel(OS_PRIO_SELF);
     }
-    uint8_t ready = 0;
+    uint8_t ready = 0,readyM = 0;
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
     while(DEF_TRUE)
@@ -507,19 +507,92 @@ static void App_lsm303(void * p_arg)
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:lsm303\n");
         FlagPendError_Callback(FLG_LSM303, error);
-				for(uint8_t i = 0; i < 3; i++)
-				{
-					OS_ENTER_CRITICAL()
-				//ready =	GetXLallDataUint8_lsm303ah(Val_lsm303.s1);
-			#ifdef FAKE_LSM303
-					ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
-			#else
-					ready = Get_XL_M_uint8_lsm303ah_fst(Val_lsm303.s1,Val_lsm303.s2);
-			#endif
-					OS_EXIT_CRITICAL()
-					if(ready) break;
-				}
+
+        ready = 0;
+        #ifdef ENABLE_LSM303_XL
+//        for(uint8_t i = 0; i < 3; i++)
+//        {
+            OS_ENTER_CRITICAL()
+            ready = read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01;    
+            OS_EXIT_CRITICAL()
+//            if(ready) break;
+//        }       
         if(ready)
+        {
+            uint8_t flag;
+            // XL data block start
+            OS_ENTER_CRITICAL()
+            flag = multiread_lsm303ah_init(LSM303AH_OUT_X_L_A);
+            OS_EXIT_CRITICAL()
+            if (flag)
+            {
+                uint8_t value;
+                for(uint8_t i = 0; i < 6; i++)
+                {
+                    OS_ENTER_CRITICAL()
+                    flag = multiread_lsm303ah_data(&value);
+                    OS_EXIT_CRITICAL()
+                    if(flag)
+                        Val_lsm303.s1[i] = value;
+                    else
+                    {
+                        flag = 0;
+                        break;  
+                    }                        
+                }
+                OS_ENTER_CRITICAL()
+                multiread_lsm303ah_rls();
+                OS_EXIT_CRITICAL()
+                
+            }
+            // XL data block end
+            Val_lsm303.s1_status = flag;
+        }
+        else    Val_lsm303.s1_status = 0;
+        #endif
+        #ifdef ENABLE_LSM303_M
+        OS_ENTER_CRITICAL()
+        readyM = read_lsm303ah_fst(LSM303AH_STATUS_REG_M)&0x08;
+        OS_EXIT_CRITICAL()
+        if(readyM)
+        {
+            uint8_t flag;
+            OS_ENTER_CRITICAL()
+            flag = multiread_lsm303ah_init(LSM303AH_OUTX_L_REG_M);
+            OS_EXIT_CRITICAL()
+            // M data block start
+            if (flag)
+            {
+                uint8_t value;
+                for(uint8_t i = 0; i < 6; i++)
+                {
+                    OS_ENTER_CRITICAL()
+                    flag = multiread_lsm303ah_data(&value);
+                    OS_EXIT_CRITICAL()
+                    if(flag)
+                        Val_lsm303.s2[i] = value;
+                    else
+                    {
+                        flag = 0;
+                        break;  
+                    }                        
+                }
+                OS_ENTER_CRITICAL()
+                multiread_lsm303ah_rls();
+                OS_EXIT_CRITICAL()
+                
+            }
+            Val_lsm303.s2_status = flag;
+            // M data block end
+        }
+        else Val_lsm303.s2_status = 0;
+      #endif
+      #ifdef FAKE_LSM303
+        ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
+        Val_lsm303.s1_status = 1;
+        Val_lsm303.s2_status = 1;
+      #endif
+        if(ready||readyM)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
             {
@@ -533,11 +606,8 @@ static void App_lsm303(void * p_arg)
                 __NOP();
                 SendStr((int8_t*)"OS_Q_CNTWRN:lsm303\n");
             }
-            
         }
-        //else OSTimeDly(OS_TIME_1mS);
-				//else OSTimeDly(lsm303.TDiscr);
-				OSTimeDly(lsm303.TDiscr);
+		OSTimeDly(lsm303.TDiscr);
     }
 }
 static void App_bmp280(void * p_arg)
@@ -581,7 +651,7 @@ static void App_bmp280(void * p_arg)
 			for(uint8_t i =0; i <3;i++)
 			{
         OS_ENTER_CRITICAL()
-				OSTimeDly(OS_TIME_1mS);
+				//OSTimeDly(OS_TIME_1mS);
 			#ifdef FAKE_BMP280
 				ready = FakeEx_bmp280(Val_bmp280.s1);
 			#else
@@ -690,11 +760,22 @@ static void App_Messager(void * p_arg)
     
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
+    OS_CPU_SR cpu_sr = 0;
     INT8U err;
     uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
     uint8_t Cnt_ExactoLBIdata2send = 0;
     uint8_t headerCNT[5];
     headerCNT[0] = 'h';
+    
+    
+    uint8_t str2send[3*EXACTO_BUFLEN_256+5]; 
+    str2send[0] = 'h';
+    str2send[5] = 0;
+    str2send[6] = 0;
+    str2send[7] = 0;
+    uint8_t flag2send = 0;
+    uint8_t tmplen = 0;
+    uint32_t ptr2nextdata = 0;
     while(DEF_TRUE)
     {
         CounterDelay++;
@@ -712,7 +793,55 @@ static void App_Messager(void * p_arg)
         }
         if(flags)
         {
+            #ifdef ENABLE_FIFO_BUFFER
+                tmplen = ExBufLSM303.datalen;
+                if(grball_exbu8(&ExBufLSM303,&str2send[8]))
+                {
+                    ptr2nextdata = 8 + tmplen;
+                    str2send[5] = tmplen;
+                    flag2send = 1;
+                }
+                else
+                {
+                    ptr2nextdata = 8;
+                    str2send[5] = 0;
+                }
+                tmplen = ExBufBMP280.datalen;
+                if(grball_exbu8(&ExBufBMP280,&str2send[ptr2nextdata]))
+                {
+                    ptr2nextdata += tmplen;
+                    str2send[6] = ptr2nextdata;
+                    flag2send = 1;
+                }
+                else
+                {
+                    str2send[6] = 0;
+                }
+                tmplen = ExBufISM330.datalen;
+                if(grball_exbu8(&ExBufISM330,&str2send[ptr2nextdata]))
+                {
+                    ptr2nextdata += tmplen;
+                    str2send[7] = ptr2nextdata;
+                    flag2send = 1;
+                }
+                else
+                {
+                    str2send[7] = 0;
+                }
+                if(flag2send)
+                {
+                    str2send[1] = (uint8_t)CounterDelay << 24;
+                    str2send[2] = (uint8_t)CounterDelay << 16;
+                    str2send[3] = (uint8_t)CounterDelay << 8;
+                    str2send[4] = (uint8_t)CounterDelay;
+                }
+                else
+                    SendStr((int8_t*)"No data in buffer\n");
+            #else
+            OS_ENTER_CRITICAL()
             Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send);
+            OS_EXIT_CRITICAL()
+            //Cnt_ExactoLBIdata2send = 0;
             if(Cnt_ExactoLBIdata2send > 3)
             {
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
@@ -729,7 +858,8 @@ static void App_Messager(void * p_arg)
             {
                 SendStr((int8_t*)"No data in buffer\n");
             }
-						OSTimeDly(BaseDelay);
+            #endif
+			OSTimeDly(BaseDelay);
         }
         else
         {
@@ -923,29 +1053,29 @@ void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
 void USART2_IRQHandler(void) {
     if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET)
     {
-				switch(ModeTx)
-				{
-					case 0:
-						if(*pTx!=0)
-							USART_SendData(USART2, *pTx++);
-						else 
-						{
-							USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-							pTx = 0;
-							OSSemPost(pUart);
-            }
-						break;
-					case 1:
-						if(pTxFixLengthCnt != pTxFixLength_i)
-								USART_SendData(USART2, pTxFixLength[pTxFixLength_i++]);
-						else
-						{
-								USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-								pTxFixLength = 0;
-								OSSemPost(pUart);
-						}
-						break;
-				}
+        switch(ModeTx)
+        {
+            case 0:
+                if(*pTx!=0)
+                    USART_SendData(USART2, *pTx++);
+                else 
+                {
+                    USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+                    pTx = 0;
+                    OSSemPost(pUart);
+                }
+				break;
+            case 1:
+                if(pTxFixLengthCnt != pTxFixLength_i)
+                        USART_SendData(USART2, pTxFixLength[pTxFixLength_i++]);
+                else
+                {
+                        USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+                        pTxFixLength = 0;
+                        OSSemPost(pUart);
+                }
+                break;
+		}
     }
     if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
     {

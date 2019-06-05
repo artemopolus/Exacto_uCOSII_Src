@@ -2,6 +2,10 @@
 #include <stm32f10x.h>
 #include "exacto_struct.h"
 #include "exacto_defs.h"
+#include "exacto_buffer.h"
+
+
+
 
 extern OS_EVENT * pMailStm32;
 extern OS_FLAG_GRP * pFlgSensors;
@@ -13,6 +17,11 @@ extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
 
 extern ExactoLBIdata ExactoBuffer;
+
+extern ExactoBufferUint8Type ExBufLSM303;
+extern ExactoBufferUint8Type ExBufBMP280;
+extern ExactoBufferUint8Type ExBufISM330;
+
 extern INT16U BaseDelay;
 
 extern ExactoSensorSet lsm303;
@@ -103,10 +112,45 @@ void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
 
 void SensorData2lsm303(SensorData * src)
 {
+    //
+    #ifdef ENABLE_FIFO_BUFFER
+    if(src->s1_status)
+    {
+        for(uint8_t i = 0; i < 6; i++)
+        {
+            pshfrc_exbu8(&ExBufLSM303,src->s1[i]);
+        }
+    }
+    if(src->s2_status)
+    {
+        for(uint8_t i = 0; i < 6; i++)
+        {
+            pshfrc_exbu8(&ExBufLSM303,src->s2[i]);
+        }
+    }
+    #else
 	uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303;
-	for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
-	for(i = 6; i < 12 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
-	ExactoBuffer.cnt_lsm303 += 12;
+    if(src->s1_status)
+    {
+        if((pData + 6) > EXACTOLBIDATASIZE)
+        {
+            ExactoBuffer.cnt_lsm303 = 0;
+            pData = 0;
+        }
+        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
+        ExactoBuffer.cnt_lsm303 += 6;
+    }
+    if(src->s2_status)
+    {
+        if((ExactoBuffer.cnt_lsm303 + 6) > EXACTOLBIDATASIZE)
+        {
+            ExactoBuffer.cnt_lsm303 = 6;
+            pData = 0;
+        }
+        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + 6 + i] = src->s2[i];
+        ExactoBuffer.cnt_lsm303 += 6;
+    }
+	#endif
 }
 void SensorData2bmp280(SensorData * src)
 {
@@ -272,7 +316,7 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             perr);
 									if(tmp_flg != 0x07)
 										__NOP();
-                    OSSemPost(pSism330);
+                    //OSSemPost(pSism330);
                     if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
                     else
                     {
@@ -347,13 +391,13 @@ void        App_buffer(void * p_arg)
 										SensorData2ism330(ValInput);
                     break;
             }
-            if((ExactoBuffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
-                ||(ExactoBuffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
-                ||(ExactoBuffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
-            {
-                ExactoLBIdataCLR(&ExactoBuffer);
-                SendStr((int8_t*)"AP_BUFF:FORCE_BUFFER_CLR\n");
-            }
+//            if((ExactoBuffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
+//                ||(ExactoBuffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
+//                ||(ExactoBuffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
+//            {
+//                ExactoLBIdataCLR(&ExactoBuffer);
+//                SendStr((int8_t*)"AP_BUFF:FORCE_BUFFER_CLR\n");
+//            }
         }
         else
         {
