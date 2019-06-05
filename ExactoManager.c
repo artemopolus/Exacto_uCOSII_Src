@@ -154,15 +154,36 @@ void SensorData2lsm303(SensorData * src)
 }
 void SensorData2bmp280(SensorData * src)
 {
+    #ifdef ENABLE_FIFO_BUFFER
+    if(src->s1_status)
+    {
+        for(uint8_t i = 0; i < 6; i++)
+        {
+            pshfrc_exbu8(&ExBufBMP280,src->s1[i]);
+        }
+    }
+    #else
 	uint8_t i = 0, pData = ExactoBuffer.cnt_bmp280;
 	for(i = 0; i < 6 ; i++) ExactoBuffer.bmp280[pData + i] = src->s1[i];
 	ExactoBuffer.cnt_bmp280 += 6;
+    #endif
 }
 void SensorData2ism330(SensorData * src)
 {
+    #ifdef ENABLE_FIFO_BUFFER
+    if(src->sL_status)
+    {
+        for(uint8_t i = 0; i < 6; i++)
+        {
+            pshfrc_exbu8(&ExBufISM330,src->sL[i]);
+        }
+    }
+
+    #else
 	uint8_t i = 0, pData = ExactoBuffer.cnt_ism330;
 	for(i = 0; i < 14 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->sL[i];
 	ExactoBuffer.cnt_ism330 += 14;
+    #endif
 }
 
 void App_stm32(void * p_arg)

@@ -665,6 +665,7 @@ static void App_bmp280(void * p_arg)
 			}
         if(ready)
         {
+            Val_bmp280.sL_status = 1;
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
             {
                 __NOP();
@@ -732,6 +733,7 @@ static void App_ism330(void * p_arg)
 		}
         if(ready)
         {
+            Val_ism330.sL_status = 1;
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
             {
                 __NOP();
@@ -760,13 +762,16 @@ static void App_Messager(void * p_arg)
     
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
-    OS_CPU_SR cpu_sr = 0;
+    
     INT8U err;
+    #ifdef ENABLE_FIFO_BUFFER
+    #else
+    OS_CPU_SR cpu_sr = 0;
     uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
     uint8_t Cnt_ExactoLBIdata2send = 0;
     uint8_t headerCNT[5];
     headerCNT[0] = 'h';
-    
+    #endif
     
     uint8_t str2send[3*EXACTO_BUFLEN_256+5]; 
     str2send[0] = 'h';
