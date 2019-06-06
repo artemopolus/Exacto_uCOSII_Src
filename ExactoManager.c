@@ -132,7 +132,7 @@ void SensorData2lsm303(SensorData * src)
 	uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303;
     if(src->s1_status)
     {
-        if((pData + 6) > EXACTOLBIDATASIZE)
+        if((pData + 6) > EXACTOLSM303SZ)
         {
             ExactoBuffer.cnt_lsm303 = 0;
             pData = 0;
@@ -142,7 +142,7 @@ void SensorData2lsm303(SensorData * src)
     }
     if(src->s2_status)
     {
-        if((ExactoBuffer.cnt_lsm303 + 6) > EXACTOLBIDATASIZE)
+        if((ExactoBuffer.cnt_lsm303 + 6) > EXACTOLSM303SZ)
         {
             ExactoBuffer.cnt_lsm303 = 6;
             pData = 0;
@@ -164,8 +164,16 @@ void SensorData2bmp280(SensorData * src)
     }
     #else
 	uint8_t i = 0, pData = ExactoBuffer.cnt_bmp280;
+	if(src->s1_status)
+	{
+		if((ExactoBuffer.cnt_bmp280 + 6) > EXACTOBMP280SZ)
+        {
+            ExactoBuffer.cnt_bmp280 = 6;
+            pData = 0;
+        }
 	for(i = 0; i < 6 ; i++) ExactoBuffer.bmp280[pData + i] = src->s1[i];
 	ExactoBuffer.cnt_bmp280 += 6;
+	}
     #endif
 }
 void SensorData2ism330(SensorData * src)
@@ -180,9 +188,18 @@ void SensorData2ism330(SensorData * src)
     }
 
     #else
+	if(src->sL_status)
+	{
+				
 	uint8_t i = 0, pData = ExactoBuffer.cnt_ism330;
+		if((ExactoBuffer.cnt_ism330 + 6) > EXACTOISM330SZ)
+        {
+            ExactoBuffer.cnt_ism330 = 6;
+            pData = 0;
+        }
 	for(i = 0; i < 14 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->sL[i];
 	ExactoBuffer.cnt_ism330 += 14;
+	}
     #endif
 }
 

@@ -766,15 +766,7 @@ static void App_Messager(void * p_arg)
     
     INT8U err;
     #ifdef ENABLE_FIFO_BUFFER
-    #else
-    OS_CPU_SR cpu_sr = 0;
-    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
-    uint8_t Cnt_ExactoLBIdata2send = 0;
-    uint8_t headerCNT[5];
-    headerCNT[0] = 'h';
-    #endif
-    
-    uint8_t str2send[3*EXACTO_BUFLEN_256+5] = {0}; 
+		uint8_t str2send[3*EXACTO_BUFLEN_256+5] = {0}; 
     const int str2send_len = 3*EXACTO_BUFLEN_256+5;
     str2send[0] = 'h';
     str2send[5] = 0;
@@ -783,6 +775,15 @@ static void App_Messager(void * p_arg)
     uint8_t flag2send = 0;
     uint8_t tmplen = 0;
     uint32_t ptr2nextdata = 0;
+    #else
+    OS_CPU_SR cpu_sr = 0;
+    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
+    uint8_t Cnt_ExactoLBIdata2send = 0;
+    uint8_t headerCNT[5];
+    headerCNT[0] = 'h';
+    #endif
+    
+    
     SendStr((int8_t*)"APP_MSG:start messaging\n");
     if(lsm303.Whoami)
     {
