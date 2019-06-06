@@ -114,7 +114,7 @@ uint8_t pTxFixLengthCnt = 0;
 uint8_t pTxFixLength_i = 0;
 uint8_t ModeTx = 0;
 
-
+uint8_t SilenceMode = 1;
 
 CmdToStm32 bMailStm32;
 
@@ -326,7 +326,55 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
-  
+    
+     uint8_t crflg_lsm303 = 0, crflg_bmp280 = 0, crflg_ism330 = 0; 
+    if(Exacto_init_lsm303ah())
+    { 
+        lsm303.Whoami = 0x01;        
+                OSTimeDly(OS_TIME_1mS);
+        if(!Exacto_setfrq_lsm303ah(0))
+        {
+            __NOP();					
+        }
+        else
+        {
+            lsm303.initFreq = 0x01;
+            crflg_lsm303 = 1;
+        }
+    }
+    if(Exacto_init_bmp280())
+    {
+        bmp280.Whoami = 1;
+        OSTimeDly(OS_TIME_10mS);
+        if(!Exacto_setfrq_bmp280(0))
+        {
+            __NOP();
+        }
+        else
+        {
+            OSTimeDly(OS_TIME_10mS);
+            bmp280.initFreq = 0x01;
+            crflg_bmp280 = 1;
+        }
+    }
+    if( Exacto_init_ism330())
+    {
+        ism330.Whoami = 1;
+        if(!Exacto_setfrq_ism330(0))
+        {
+            __NOP();
+
+        }
+        else
+        {
+            ism330.initFreq = 0x01;
+            crflg_ism330 = 1;
+        }
+    }
+    
+    setini_exbu8(&ExBufLSM303, EXACTO_BUFLEN_256);
+    setini_exbu8(&ExBufBMP280, EXACTO_BUFLEN_256);
+    setini_exbu8(&ExBufISM330, EXACTO_BUFLEN_256);
   
   switch(OSTaskCreate((void (*)(void *)) App_Messager,  
                (void          * ) 0,
@@ -374,9 +422,6 @@ static  void  App_TaskStart (void *p_arg)
     {
         case OS_ERR_NONE:
             __NOP();
-            setini_exbu8(&ExBufLSM303, EXACTO_BUFLEN_256);
-            setini_exbu8(&ExBufBMP280, EXACTO_BUFLEN_256);
-            setini_exbu8(&ExBufISM330, EXACTO_BUFLEN_256);
             break;
         case OS_ERR_PRIO_EXIST:
             __NOP();
@@ -406,67 +451,78 @@ static  void  App_TaskStart (void *p_arg)
         case OS_ERR_TASK_CREATE_ISR:
             __NOP();
             break;
-    }           
-	
-  switch(OSTaskCreate((void (*)(void *)) App_lsm303,        //  Создадим Задачу для измерения1
-               (void          * ) &lsm303,
-               (OS_STK        * ) &Stk_App_lsm303[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
-               (INT8U           ) APP_LSM303_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              ))
+    }      
+
+   
+
+    if(crflg_lsm303)
     {
-        case OS_ERR_NONE:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_EXIST:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_INVALID:
-            __NOP();
-            break;
-        case OS_ERR_TASK_CREATE_ISR:
-            __NOP();
-            break;
+      switch(OSTaskCreate((void (*)(void *)) App_lsm303,        //  Создадим Задачу для измерения1
+                   (void          * ) &lsm303,
+                   (OS_STK        * ) &Stk_App_lsm303[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
+                   (INT8U           ) APP_LSM303_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
+                  ))
+        {
+            case OS_ERR_NONE:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_EXIST:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_INVALID:
+                __NOP();
+                break;
+            case OS_ERR_TASK_CREATE_ISR:
+                __NOP();
+                break;
+        }
     }
-  switch(OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
-               (void          * ) &bmp280,
-               (OS_STK        * ) &Stk_App_bmp280[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
-               (INT8U           ) APP_BMP280_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              ) )
+    if(crflg_bmp280)
     {
-        case OS_ERR_NONE:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_EXIST:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_INVALID:
-            __NOP();
-            break;
-        case OS_ERR_TASK_CREATE_ISR:
-            __NOP();
-            break;
+      switch(OSTaskCreate((void (*)(void *)) App_bmp280,        //  Создадим Задачу для измерения1
+                   (void          * ) &bmp280,
+                   (OS_STK        * ) &Stk_App_bmp280[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
+                   (INT8U           ) APP_BMP280_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
+                  ) )
+        {
+            case OS_ERR_NONE:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_EXIST:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_INVALID:
+                __NOP();
+                break;
+            case OS_ERR_TASK_CREATE_ISR:
+                __NOP();
+                break;
+        }
     }
 
-  switch(OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
-               (void          * ) &ism330,
-               (OS_STK        * ) &Stk_App_ism330[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
-               (INT8U           ) APP_ISM330_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
-              ))
+    if(crflg_ism330)
     {
-        case OS_ERR_NONE:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_EXIST:
-            __NOP();
-            break;
-        case OS_ERR_PRIO_INVALID:
-            __NOP();
-            break;
-        case OS_ERR_TASK_CREATE_ISR:
-            __NOP();
-            break;
+      switch(OSTaskCreate((void (*)(void *)) App_ism330,        //  Создадим Задачу для измерения1
+                   (void          * ) &ism330,
+                   (OS_STK        * ) &Stk_App_ism330[APP_TASK_STK_SIZE - 1],  //  Стек Задачи
+                   (INT8U           ) APP_ISM330_MEAS_PRIO   // Уровень приоритета для этой Задачи =5
+                  ))
+        {
+            case OS_ERR_NONE:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_EXIST:
+                __NOP();
+                break;
+            case OS_ERR_PRIO_INVALID:
+                __NOP();
+                break;
+            case OS_ERR_TASK_CREATE_ISR:
+                __NOP();
+                break;
+        }
     }
-  
+  SilenceMode = 0;
   OSTaskDel(OS_PRIO_SELF);   //  
 }   
 
@@ -480,28 +536,11 @@ static void App_lsm303(void * p_arg)
 {
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
-    OS_FLAGS flValue;
-    if(Exacto_init_lsm303ah())
-    { 
-        lsm303.Whoami = 0x01;        
-				OSTimeDly(OS_TIME_1mS);
-        if(!Exacto_setfrq_lsm303ah(0))
-        {
-            __NOP();
-            SendStr((int8_t*)"ERRSET:lsm303 set freq\n");					
-        }
-        else
-        {
-            lsm303.initFreq = 0x01;
-        }
-    }
-    else
-    {
-        OSTaskDel(OS_PRIO_SELF);
-    }
+    OS_FLAGS flValue;    
     uint8_t ready = 0,readyM = 0;
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
+    //SendStr((int8_t*)"TSKCRTD:lsm303\n");
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
@@ -618,31 +657,9 @@ static void App_bmp280(void * p_arg)
     uint8_t flValue;
     SensorData Val_bmp280;
     Val_bmp280.pSensor = FLG_BMP280;
-    if(Exacto_init_bmp280())
-    {
-      bmp280.Whoami = 1;
-			OSTimeDly(OS_TIME_10mS);
-        if(!Exacto_setfrq_bmp280(0))
-        {
-            __NOP();
-            SendStr((int8_t*)"ERRSET:bmp280 set freq\n");
-        }
-				else
-				{
-//					EnReset_bmp280();
-					OSTimeDly(OS_TIME_10mS);
-//					DsReset_bmp280();
-//					OSTimeDly(OS_TIME_10mS);
-//					EnReset_bmp280();
-//					OSTimeDly(OS_TIME_10mS);
-//					DsReset_bmp280();
-				}
-    }
-    else
-    {
-        OSTaskDel(OS_PRIO_SELF);
-    }
+
     uint8_t ready = 0;
+    //SendStr((int8_t*)"TSKCRTD:bmp280\n");
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
@@ -686,30 +703,14 @@ static void App_bmp280(void * p_arg)
 }
 static void App_ism330(void * p_arg)
 {
-		ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
+	ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
     uint8_t ready = 0;
     OS_FLAGS flValue;
     SensorData  Val_ism330;
     Val_ism330.pSensor = FLG_ISM330;
-    if( Exacto_init_ism330())
-    {
-        ism330.Whoami = 1;
-        if(!Exacto_setfrq_ism330(0))
-        {
-            __NOP();
-            SendStr((int8_t*)"ERRSET:ism330 set freq\n");
-        }
-				else
-				{
-					ism330.initFreq = 0x01;
-				}
-    }
-    else
-    {
-        OSTaskDel(OS_PRIO_SELF);
-    }
+    //SendStr((int8_t*)"TSKCRTD:ism330\n");
     while(DEF_TRUE)
     {
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
@@ -773,7 +774,8 @@ static void App_Messager(void * p_arg)
     headerCNT[0] = 'h';
     #endif
     
-    uint8_t str2send[3*EXACTO_BUFLEN_256+5]; 
+    uint8_t str2send[3*EXACTO_BUFLEN_256+5] = {0}; 
+    const int str2send_len = 3*EXACTO_BUFLEN_256+5;
     str2send[0] = 'h';
     str2send[5] = 0;
     str2send[6] = 0;
@@ -781,6 +783,37 @@ static void App_Messager(void * p_arg)
     uint8_t flag2send = 0;
     uint8_t tmplen = 0;
     uint32_t ptr2nextdata = 0;
+    SendStr((int8_t*)"APP_MSG:start messaging\n");
+    if(lsm303.Whoami)
+    {
+        if(lsm303.initFreq)
+            SendStr((int8_t*)"APP_MSG:lsm303 init and config\n");
+        else
+            SendStr((int8_t*)"APP_MSG:lsm303 init and config error\n");
+    }
+    else    SendStr((int8_t*)"APP_MSG:lsm303 init error and config error\n");
+    if(bmp280.Whoami)
+    {
+        if(bmp280.initFreq)
+            SendStr((int8_t*)"APP_MSG:bmp280 init and config\n");
+        else
+            SendStr((int8_t*)"APP_MSG:bmp280 init and config error\n");
+    }
+    else    SendStr((int8_t*)"APP_MSG:bmp280 init error and config error\n");
+    if(ism330.Whoami)
+    {
+        if(ism330.initFreq)
+            SendStr((int8_t*)"APP_MSG:ism330 init and config\n");
+        else
+            SendStr((int8_t*)"APP_MSG:ism330 init and config error\n");
+    }
+    else    SendStr((int8_t*)"APP_MSG:ism330 init error and config error\n");
+    if(ExBufLSM303.isExist) SendStr((int8_t*)"APP_MSG:buffer for lsm303 created\n");
+    else SendStr((int8_t*)"APP_MSG:buffer for lsm303 error\n");
+    if(ExBufBMP280.isExist) SendStr((int8_t*)"APP_MSG:buffer for bmp280 created\n");
+    else SendStr((int8_t*)"APP_MSG:buffer for bmp280 error\n");
+    if(ExBufISM330.isExist) SendStr((int8_t*)"APP_MSG:buffer for ism330 created\n");
+    else SendStr((int8_t*)"APP_MSG:buffer for ism330 error\n");
     while(DEF_TRUE)
     {
         CounterDelay++;
@@ -1033,7 +1066,9 @@ static void App_UartRxBuffParser(void *p_arg)
 
 // ------------ Функция запуска передачи ----------------------------
 void SendStr(s8* ptr) { //  Неплохо бы проверять параметр на !=0
-u8 err;        //  Для кода завершения
+  if(SilenceMode)
+      return;
+  u8 err;        //  Для кода завершения
   OSSemPend(pUart,0,&err);  //  Свободен ли UART?  
   pTx=ptr;                  //  Да, передача адреса строки символов 
 	ModeTx = 0;
@@ -1041,6 +1076,8 @@ u8 err;        //  Для кода завершения
 }
 void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
 {
+    if(SilenceMode)
+      return;
 	uint8_t err;
 	OSSemPend(pUart,0,&err);
     if(err != OS_ERR_NONE)
