@@ -23,8 +23,8 @@
 
 #define ECHO_ALL
 //#define PING_MODE
-#define FAKE_ISM330
-#define FAKE_BMP280
+//#define FAKE_ISM330
+//#define FAKE_BMP280
 //#define FAKE_LSM303
 #define ENABLE_LSM303_XL
 #define ENABLE_LSM303_M
@@ -174,7 +174,7 @@ void Exacto_safewrite_ism330(uint8_t RegAdr, uint8_t RegVal);
 uint8_t Exacto_sensor_read  (uint8_t TrgModule, uint8_t RegAdr, uint8_t * RegValue );
 uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegValue );
 
-uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst);
+uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint32_t dstlen);
 
 uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
 uint8_t FakeEx_bmp280(uint8_t * src1 ){for(uint8_t i = 1; i < 7;i++) {src1[i] = i;}return 1;}
@@ -664,7 +664,7 @@ static void App_bmp280(void * p_arg)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_BMP280,OS_FLAG_WAIT_SET_ALL,0,&error);
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:bmp280\n");
-        FlagPendError_Callback(FLG_BMP280, error);
+        if(error != OS_ERR_NONE)	FlagPendError_Callback(FLG_BMP280, error);
 			for(uint8_t i =0; i <3;i++)
 			{
         OS_ENTER_CRITICAL()
@@ -682,7 +682,7 @@ static void App_bmp280(void * p_arg)
 			}
         if(ready)
         {
-            Val_bmp280.sL_status = 1;
+            Val_bmp280.s1_status = 1;
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_bmp280)))==OS_Q_FULL)
             {
                 __NOP();
@@ -777,7 +777,8 @@ static void App_Messager(void * p_arg)
     uint32_t ptr2nextdata = 0;
     #else
     OS_CPU_SR cpu_sr = 0;
-    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE*3 + 3];
+    uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3];
+		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
     uint8_t Cnt_ExactoLBIdata2send = 0;
     uint8_t headerCNT[5];
     headerCNT[0] = 'h';
@@ -878,7 +879,7 @@ static void App_Messager(void * p_arg)
                     SendStr((int8_t*)"No data in buffer\n");
             #else
             OS_ENTER_CRITICAL()
-            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send);
+            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
             OS_EXIT_CRITICAL()
             //Cnt_ExactoLBIdata2send = 0;
             if(Cnt_ExactoLBIdata2send > 3)

@@ -84,16 +84,34 @@ uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
     return 1;
 }
 
-uint8_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst)
+uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint32_t dstlen)
 {
     if(!(src->cnt_lsm303 || src->cnt_bmp280 || src->cnt_ism330))   return 0;
     dst[0] = src->cnt_lsm303;
     dst[1] = src->cnt_bmp280;
     dst[2] = src->cnt_ism330;
-    for(uint8_t i = 0; i < src->cnt_lsm303; i++) dst[i + 3]                                        = src->lsm303[i];
-    for(uint8_t i = 0; i < src->cnt_bmp280; i++) dst[i + 3 + src->cnt_lsm303]                      = src->bmp280[i];
-    for(uint8_t i = 0; i < src->cnt_ism330; i++) dst[i + 3 + src->cnt_lsm303 + src->cnt_bmp280]    = src->ism330[i];
-		uint8_t allcount = (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
+		uint32_t allcount = 3;
+		if((src->cnt_lsm303)&&(dstlen > (src->cnt_lsm303 + allcount)))
+		{
+			for(uint32_t i = 0; i < src->cnt_lsm303; i++) 
+				dst[i + allcount] = src->lsm303[i];
+			allcount += src->cnt_lsm303;
+		}
+		
+		if((src->cnt_bmp280)&&(dstlen >(src->cnt_bmp280 + allcount)))
+		{
+			for(uint32_t i = 0; i < src->cnt_bmp280; i++) 
+				dst[i + allcount] = src->bmp280[i];
+			allcount += src->cnt_bmp280;
+		}
+		
+		if((src->cnt_ism330)&&(dstlen >(src->cnt_ism330 + allcount)))
+		{
+			for(uint32_t i = 0; i < src->cnt_ism330; i++) 
+				dst[i + allcount] = src->ism330[i];
+			allcount += src->cnt_ism330;
+		}
+		//uint8_t allcount = (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
     src->cnt_lsm303 = 0;
     src->cnt_bmp280 = 0;
     src->cnt_ism330 = 0;
