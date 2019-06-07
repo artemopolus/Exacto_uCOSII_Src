@@ -44,7 +44,7 @@ uint8_t Exacto_setfrq_bmp280(uint8_t mode);
 
 
 
-
+//#define ENABLE_FST_CP2ARRAY
 
 
 #define CNTSTATES   10
@@ -91,6 +91,23 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
     dst[1] = src->cnt_bmp280;
     dst[2] = src->cnt_ism330;
 		uint32_t allcount = 3;
+		
+		#ifdef ENABLE_FST_CP2ARRAY
+		if((src->cnt_lsm303 + src->cnt_bmp280 + src->cnt_ism330 + 3) < dstlen)
+		{
+			uint32_t maxcounter = (src->cnt_lsm303 > src->cnt_bmp280) ? src->cnt_lsm303 : src->cnt_bmp280;
+			maxcounter = (src->cnt_ism330 > maxcounter) ? src->cnt_ism330 : maxcounter;
+			for(uint32_t i = 0; i < maxcounter; i++)
+			{
+				if(i < src->cnt_lsm303)
+					dst[3 + i] = src->lsm303[i];
+				if(i < src->cnt_bmp280)
+					dst[3 + src->cnt_lsm303 + i] = src->bmp280[i];
+				if(i < src->cnt_ism330)
+					dst[3 + src->cnt_bmp280 + src->cnt_lsm303 + i] = src->ism330[i];
+			}
+		}
+		#endif
 		if((src->cnt_lsm303)&&(dstlen > (src->cnt_lsm303 + allcount)))
 		{
 			for(uint32_t i = 0; i < src->cnt_lsm303; i++) 
