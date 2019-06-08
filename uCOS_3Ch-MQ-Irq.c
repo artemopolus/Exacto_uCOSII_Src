@@ -76,9 +76,9 @@ OS_EVENT 	* pEvUartRxBuff;
 OS_EVENT * pEvSensorBuff;
 //5
 OS_FLAG_GRP * pFlgSensors;
-OS_EVENT  * pSlsm303;
-OS_EVENT  * pSbmp280;
-OS_EVENT  * pSism330;
+#ifdef ENABLE_SAFE_CP2BUFFER
+OS_EVENT * pBuffRdy;
+#endif
 
 //10
 
@@ -311,6 +311,27 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
+		#ifdef ENABLE_SAFE_CP2BUFFER
+		pBuffRdy = OSMutexCreate(19,&errorParser);
+		switch(errorParser)
+		{
+			case OS_ERR_NONE:
+				__NOP();
+				break;
+			case OS_ERR_CREATE_ISR:
+				__NOP();
+				break;
+			case OS_ERR_PRIO_EXIST:
+				__NOP();
+				break;				
+			case OS_ERR_PEVENT_NULL:  
+				__NOP();
+				break;
+			case OS_ERR_PRIO_INVALID:
+				__NOP();
+				break;
+		}
+		#endif
     pFlgSensors = OSFlagCreate(0x00,&errorParser);
     if(errorParser != OS_ERR_NONE)
     {
@@ -321,11 +342,7 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
-    pSism330 = OSSemCreate(0); 
-    if(pSism330 == (OS_EVENT *)0 )
-    {
-        __NOP();
-    }
+
     
      uint8_t crflg_lsm303 = 0, crflg_bmp280 = 0, crflg_ism330 = 0; 
     if(Exacto_init_lsm303ah())
@@ -763,7 +780,9 @@ static void App_Messager(void * p_arg)
     
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
-    
+    #ifdef ENABLE_SAFE_CP2BUFFER
+		uint8_t errB;
+		#endif
     INT8U err;
     #ifdef ENABLE_FIFO_BUFFER
 		uint8_t str2send[3*EXACTO_BUFLEN_256+5] = {0}; 
@@ -878,9 +897,20 @@ static void App_Messager(void * p_arg)
                 else
                     SendStr((int8_t*)"No data in buffer\n");
             #else
+						
+						#ifdef ENABLE_SAFE_CP2BUFFER
+						OSMutexPend(pBuffRdy,0,&errB);
+						#endif
+						#ifdef ENABLE_CRITSEC_CP2BUFFER
             OS_ENTER_CRITICAL()
+						#endif
             Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
+						#ifdef ENABLE_CRITSEC_CP2BUFFER
             OS_EXIT_CRITICAL()
+						#endif
+						#ifdef ENABLE_SAFE_CP2BUFFER
+						errB = OSMutexPost(pBuffRdy);
+						#endif
             //Cnt_ExactoLBIdata2send = 0;
             if(Cnt_ExactoLBIdata2send > 3)
             {

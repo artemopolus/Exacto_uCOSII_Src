@@ -12,6 +12,10 @@ extern OS_FLAG_GRP * pFlgSensors;
 extern OS_EVENT * pEvSensorBuff;
 extern OS_EVENT  * pSism330;
 
+#ifdef ENABLE_SAFE_CP2BUFFER
+extern OS_EVENT * pBuffRdy;
+#endif
+
 extern s8    cBuf[16];
 extern const uint8_t CntExactoStm32States;
 extern uint8_t * ExactoStm32States;
@@ -457,13 +461,19 @@ void        App_buffer(void * p_arg)
 {
     SensorData * ValInput;
 	uint8_t err;
+		#ifdef ENABLE_SAFE_CP2BUFFER
+		uint8_t errB;
+		#endif
     ExactoBuffer.cnt_lsm303 = 0;
     ExactoBuffer.cnt_bmp280 = 0;
     ExactoBuffer.cnt_ism330 = 0;
     while(DEF_TRUE)
     {
         ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
-        if(err == OS_ERR_NONE)
+        #ifdef ENABLE_SAFE_CP2BUFFER
+				OSMutexPend(pBuffRdy,0,&errB);
+				#endif
+				if(err == OS_ERR_NONE)
         {
             switch(ValInput->pSensor)
             {
@@ -491,27 +501,30 @@ void        App_buffer(void * p_arg)
         else
         {
             switch(err)
-			{
-				case OS_ERR_TIMEOUT:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_TIMEOUT\n");
-					break;
-				case OS_ERR_PEND_ABORT:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ABORT\n");
-					break;
-                case OS_ERR_EVENT_TYPE:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_EVENT_TYPE\n");
-					break;
-                case OS_ERR_PEVENT_NULL:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEVENT_NULL\n");
-					break;
-                case OS_ERR_PEND_ISR:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ISR\n");
-					break;
-                case OS_ERR_PEND_LOCKED:
-                    SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_LOCKED\n");
-					break;
-			}
+						{
+							case OS_ERR_TIMEOUT:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_TIMEOUT\n");
+								break;
+							case OS_ERR_PEND_ABORT:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ABORT\n");
+								break;
+											case OS_ERR_EVENT_TYPE:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_EVENT_TYPE\n");
+								break;
+											case OS_ERR_PEVENT_NULL:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEVENT_NULL\n");
+								break;
+											case OS_ERR_PEND_ISR:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ISR\n");
+								break;
+											case OS_ERR_PEND_LOCKED:
+													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_LOCKED\n");
+								break;
+						}
         }
+				#ifdef ENABLE_SAFE_CP2BUFFER
+					errB = OSMutexPost(pBuffRdy);
+				#endif
 //        if(ExactoLBIdataCLR(&buffer))
 //        {
 //            __NOP();
