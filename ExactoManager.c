@@ -171,6 +171,7 @@ void SensorData2lsm303(SensorData * src)
         {
             ExactoBuffer.cnt_lsm303 = 0;
             pData = 0;
+					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
         }
         for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
         ExactoBuffer.cnt_lsm303 += 6;
@@ -181,6 +182,7 @@ void SensorData2lsm303(SensorData * src)
         {
             ExactoBuffer.cnt_lsm303 = 6;
             pData = 0;
+					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
         }
         for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + 6 + i] = src->s2[i];
         ExactoBuffer.cnt_lsm303 += 6;
@@ -205,6 +207,7 @@ void SensorData2bmp280(SensorData * src)
         {
             ExactoBuffer.cnt_bmp280 = 6;
             pData = 0;
+					SendStr((int8_t*)"\nBUF_ERR:bmp280\n");
         }
 	for(i = 0; i < 6 ; i++) ExactoBuffer.bmp280[pData + i] = src->s1[i];
 	ExactoBuffer.cnt_bmp280 += 6;
@@ -231,6 +234,7 @@ void SensorData2ism330(SensorData * src)
         {
             ExactoBuffer.cnt_ism330 = 6;
             pData = 0;
+					SendStr((int8_t*)"\nBUF_ERR:ism330\n");
         }
 	for(i = 0; i < 14 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->sL[i];
 	ExactoBuffer.cnt_ism330 += 14;
@@ -381,6 +385,18 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                         uCOSFlagPost_Callback(perr);
                     }
                     break;
+								case ONLYBMP280_ESM:
+									OSFlagPost( pFlgSensors,
+                                            FLG_BMP280,
+                                            OS_FLAG_SET,
+                                            perr);
+									break;
+								case ONLYISM330_ESM:
+									OSFlagPost( pFlgSensors,
+                                            FLG_ISM330,
+                                            OS_FLAG_SET,
+                                            perr);
+									break;
                 case ALLRUNNING_ESM:
 									
                     tmp_flg = OSFlagPost( pFlgSensors,
