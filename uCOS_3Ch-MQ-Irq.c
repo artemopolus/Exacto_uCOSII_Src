@@ -21,13 +21,7 @@
 #include "exacto_struct.h"
 #include "exacto_defs.h"
 
-#define ECHO_ALL
-//#define PING_MODE
-//#define FAKE_ISM330
-//#define FAKE_BMP280
-//#define FAKE_LSM303
-#define ENABLE_LSM303_XL
-#define ENABLE_LSM303_M
+
 
 
 #define UARTMAXWORDLEN          80
@@ -176,6 +170,15 @@ uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegVa
 
 uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint32_t dstlen);
 
+#ifdef ENABLE_I2C_SLAVE
+void Exacto_init_i2c_slave(void);
+void Transfer_I2C_Handler(void);
+void DMA1_Channel7_IRQHandler(void);
+void DMA1_Channel6_IRQHandler(void);
+void I2C1_EV_IRQHandler(void);
+void I2C1_ER_IRQHandler(void);
+#endif
+
 uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
 uint8_t FakeEx_bmp280(uint8_t * src1 ){for(uint8_t i = 1; i < 7;i++) {src1[i] = i;}return 1;}
 uint8_t FakeEx_ism330(uint8_t * src1 ){for(uint8_t i = 1; i < 15;i++) {src1[i] = i;}return 1;}
@@ -282,9 +285,19 @@ static  void  App_TaskStart (void *p_arg)
   BSP_Init();   //  Фактически - только настройка RCC - 72 (или 24) МГц от ФАПЧ 
   //BSP_IntVectSet(BSP_INT_ID_USART1, USART1_IRQHandler);
   BSP_IntVectSet(BSP_INT_ID_USART2, USART2_IRQHandler);
+    #ifdef ENABLE_I2C_SLAVE
+    BSP_IntVectSet(BSP_INT_ID_I2C1_EV, I2C1_EV_IRQHandler);
+    BSP_IntVectSet(BSP_INT_ID_I2C1_ER, I2C1_ER_IRQHandler);
+    BSP_IntVectSet(BSP_INT_ID_DMA1_CH7, DMA1_Channel7_IRQHandler);
+    BSP_IntVectSet(BSP_INT_ID_DMA1_CH6, DMA1_Channel6_IRQHandler);
+    #endif
+    
                 //  Устанка псевдовектора, имя обработчика задал прикладной программист
   //Periph_Init();    //  В этой функции делаются начальные настройки  
 	UART_init();
+    #ifdef ENABLE_I2C_SLAVE
+    Exacto_init_i2c_slave();
+    #endif
     setInitExactoSensorSet(&lsm303,"lsm303",FLG_LSM303,OS_TIME_10mS);
     setInitExactoSensorSet(&bmp280,"bmp280",FLG_BMP280,OS_TIME_10mS);
     setInitExactoSensorSet(&ism330,"ism330",FLG_ISM330,OS_TIME_10mS);
@@ -293,7 +306,7 @@ static  void  App_TaskStart (void *p_arg)
 
 
 
-  OS_CPU_SysTickInit();
+    OS_CPU_SysTickInit();
   
     uint8_t errorParser;
 	pEvUartRxBuff = OSQCreate(&pArUartRxBuff[0],MAXCOUNTUARTRECEIVER);
@@ -311,27 +324,27 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
-		#ifdef ENABLE_SAFE_CP2BUFFER
-		pBuffRdy = OSMutexCreate(19,&errorParser);
-		switch(errorParser)
-		{
-			case OS_ERR_NONE:
-				__NOP();
-				break;
-			case OS_ERR_CREATE_ISR:
-				__NOP();
-				break;
-			case OS_ERR_PRIO_EXIST:
-				__NOP();
-				break;				
-			case OS_ERR_PEVENT_NULL:  
-				__NOP();
-				break;
-			case OS_ERR_PRIO_INVALID:
-				__NOP();
-				break;
-		}
-		#endif
+    #ifdef ENABLE_SAFE_CP2BUFFER
+    pBuffRdy = OSMutexCreate(19,&errorParser);
+    switch(errorParser)
+    {
+        case OS_ERR_NONE:
+            __NOP();
+            break;
+        case OS_ERR_CREATE_ISR:
+            __NOP();
+            break;
+        case OS_ERR_PRIO_EXIST:
+            __NOP();
+            break;				
+        case OS_ERR_PEVENT_NULL:  
+            __NOP();
+            break;
+        case OS_ERR_PRIO_INVALID:
+            __NOP();
+            break;
+    }
+    #endif
     pFlgSensors = OSFlagCreate(0x00,&errorParser);
     if(errorParser != OS_ERR_NONE)
     {
