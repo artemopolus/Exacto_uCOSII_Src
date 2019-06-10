@@ -40,6 +40,7 @@ void DMA1_Channel7_IRQHandler(void)
     switch(DMA_Body_RX_IRQHandler())
     {
         case 1:
+					//Transfer complete
             break;
         case 0:
             //error
@@ -55,11 +56,15 @@ void DMA1_Channel6_IRQHandler(void)
     switch(DMA_Body_TX_IRQHandler())
     {
         case 1:
+					__NOP();
+				//Transfer complete
             break;
         case 0:
             //error
+				__NOP();
             break;
         case 2:
+					__NOP();
             //unknown
             break;
     }
@@ -67,7 +72,24 @@ void DMA1_Channel6_IRQHandler(void)
 
 void I2C1_EV_IRQHandler(void)
 {
-    I2C_DMA_Body_EV_IRQHandler();
+    switch(I2C_DMA_RXTX_EV_IRQHandler())
+		{
+			case 1:
+				//transmit
+			__NOP();
+				break;
+			case 2:
+				//receive
+				__NOP();
+				break;
+			case 3:
+				//transfer compelete
+				__NOP();
+				break;
+			case 0:
+				__NOP();
+				break;
+		}
 }
 
 void I2C1_ER_IRQHandler(void)
