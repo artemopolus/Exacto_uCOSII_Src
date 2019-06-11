@@ -38,6 +38,12 @@ volatile ExactoSensorSet lsm303;
 volatile ExactoSensorSet bmp280;
 volatile ExactoSensorSet ism330;
 
+#ifdef ENABLE_TIME_MEAS
+
+uint32_t ClkCnt;
+
+#endif
+
 INT16U BaseDelay = OS_TICKS_PER_SEC;
 
 //  На базе этих массивов будут созданы стеки Задач 
@@ -172,11 +178,12 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
 
 #ifdef ENABLE_I2C_SLAVE
 void Exacto_init_i2c_slave(void);
-void Transfer_I2C_Handler(void);
 void DMA1_Channel7_IRQHandler(void);
 void DMA1_Channel6_IRQHandler(void);
 void I2C1_EV_IRQHandler(void);
 void I2C1_ER_IRQHandler(void);
+uint8_t SetNewValue2transmit(const uint8_t value);
+void SetInitTransmitData(void);
 #endif
 
 uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
@@ -297,6 +304,7 @@ static  void  App_TaskStart (void *p_arg)
 	UART_init();
     #ifdef ENABLE_I2C_SLAVE
     Exacto_init_i2c_slave();
+		SetInitTransmitData();
     #endif
     setInitExactoSensorSet(&lsm303,"lsm303",FLG_LSM303,OS_TIME_10mS);
     setInitExactoSensorSet(&bmp280,"bmp280",FLG_BMP280,OS_TIME_10mS);
@@ -927,6 +935,9 @@ static void App_Messager(void * p_arg)
             //Cnt_ExactoLBIdata2send = 0;
             if(Cnt_ExactoLBIdata2send > 3)
             {
+							#ifdef ENABLE_TIME_MEAS
+								OSTimeSet(0L);
+							#endif
                 ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
                 headerCNT[1] = (uint8_t)CounterDelay << 24;
                 headerCNT[2] = (uint8_t)CounterDelay << 16;
@@ -1159,6 +1170,9 @@ void USART2_IRQHandler(void) {
                 {
                         USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
                         pTxFixLength = 0;
+									#ifdef ENABLE_TIME_MEAS
+												ClkCnt = OSTimeGet();
+									#endif
                         OSSemPost(pUart);
                 }
                 break;

@@ -21,26 +21,23 @@ void Exacto_init_i2c_slave(void)
     Activate2work_i2c_dma_slave();
     Handle_i2c_dma_slave();
 }
-void Transfer_I2C_Handler(void)
+uint8_t SetNewValue2transmit(const uint8_t value)
 {
-    switch(Transfer_Complete_i2c_dma_slave())
-    {
-        case 0:
-            break;
-        case 1:
-            //Sending complete
-            break;
-        case 2:
-            //Getting complete
-            break;
-    }
+	return SetValue2W2TR_i2c_dma_slave(value);
+}
+void SetInitTransmitData(void)
+{
+	uint8_t value = 1;
+	while(SetValue2W2TR_i2c_dma_slave(value++))
+	{
+	}
 }
 void DMA1_Channel7_IRQHandler(void)
 {
     switch(DMA_Body_RX_IRQHandler())
     {
         case 1:
-					//Transfer complete
+					//Transfer receive complete
             break;
         case 0:
             //error
