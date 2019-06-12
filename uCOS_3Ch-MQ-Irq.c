@@ -46,6 +46,8 @@ uint32_t ClkCnt;
 
 INT16U BaseDelay = OS_TICKS_PER_SEC;
 
+volatile uint32_t CounterAppMessager = 0;
+
 //  На базе этих массивов будут созданы стеки Задач 
 OS_STK         App_TaskStartStk[APP_TASK_STK_SIZE];
 
@@ -79,6 +81,7 @@ OS_FLAG_GRP * pFlgSensors;
 #ifdef ENABLE_SAFE_CP2BUFFER
 OS_EVENT * pBuffRdy;
 #endif
+OS_EVENT * pI2C;
 
 //10
 
@@ -176,6 +179,8 @@ uint8_t Exacto_sensor_write    (uint8_t TrgModule, uint8_t RegAdr, uint8_t RegVa
 
 uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint32_t dstlen);
 
+void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
+
 #ifdef ENABLE_I2C_SLAVE
 void Exacto_init_i2c_slave(void);
 void DMA1_Channel7_IRQHandler(void);
@@ -184,6 +189,7 @@ void I2C1_EV_IRQHandler(void);
 void I2C1_ER_IRQHandler(void);
 uint8_t SetNewValue2transmit(const uint8_t value);
 void SetInitTransmitData(void);
+uint8_t CheckTransmitBuffer(void);
 #endif
 
 uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
@@ -332,6 +338,11 @@ static  void  App_TaskStart (void *p_arg)
     {
         __NOP();
     }
+		pI2C = OSSemCreate(1);
+		if(pI2C == (OS_EVENT*)0)
+		{
+				__NOP();
+		}
     #ifdef ENABLE_SAFE_CP2BUFFER
     pBuffRdy = OSMutexCreate(19,&errorParser);
     switch(errorParser)
@@ -797,7 +808,7 @@ static void App_ism330(void * p_arg)
 
 static void App_Messager(void * p_arg)
 {
-
+		 
     
     uint32_t CounterDelay = 0;
     OS_FLAGS flags;
@@ -873,6 +884,15 @@ static void App_Messager(void * p_arg)
         }
         if(flags)
         {
+						if(CounterAppMessager > 1)
+						{
+							CounterAppMessager--;
+						} else if (CounterAppMessager == 1)
+						{
+							//stop all
+							ExactoStm32StatesChanged_Callback(0, 0, &err);
+							CounterAppMessager = 0;
+						}
             #ifdef ENABLE_FIFO_BUFFER
                 tmplen = ExBufLSM303.datalen;
                 if(grball_exbu8(&ExBufLSM303,&str2send[8]))
@@ -933,6 +953,14 @@ static void App_Messager(void * p_arg)
 						errB = OSMutexPost(pBuffRdy);
 						#endif
             //Cnt_ExactoLBIdata2send = 0;
+						#ifdef TEST_I2C_SENDING
+						if( CheckTransmitBuffer())
+						{
+							uint32_t i = 1;
+							while (SetNewValue2transmit(i++));
+						}
+						
+						#else
             if(Cnt_ExactoLBIdata2send > 3)
             {
 							#ifdef ENABLE_TIME_MEAS
@@ -952,8 +980,9 @@ static void App_Messager(void * p_arg)
             {
                 SendStr((int8_t*)"No data in buffer\n");
             }
+						#endif
             #endif
-			OSTimeDly(BaseDelay);
+						OSTimeDly(BaseDelay);
         }
         else
         {

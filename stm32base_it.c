@@ -12,19 +12,70 @@
 
 #include "exacto_i2c_slave.h"
 
+void SendStr(s8* ptr);
+
 extern OS_EVENT * pMailStm32;
+extern OS_EVENT * pI2C;
+
 #ifdef ENABLE_TIME_MEAS
 
 extern uint32_t ClkCnt;
 
 #endif
-
+CmdToStm32 bi2cToStm32;
 
 void Exacto_init_i2c_slave(void)
 {
     ConfigureMode_i2c_dma_slave();
     Activate2work_i2c_dma_slave();
     Handle_i2c_dma_slave();
+}
+void SetData2transmit(uint8_t * pData, const uint32_t datalen)
+{
+	uint8_t errParser;
+	OSSemPend(pI2C,0,&errParser);
+	switch(errParser)
+	{
+		case OS_ERR_NONE:
+			SetDT2W2TR_fixlen_i2c_dma_slave(pData,datalen);
+			break;
+		case OS_ERR_TIMEOUT:
+			break;
+		case OS_ERR_PEND_ABORT:
+			break;
+		case OS_ERR_EVENT_TYPE:
+			break;
+		case OS_ERR_PEND_ISR:
+			break;
+		case OS_ERR_PEVENT_NULL:
+			break;
+		case OS_ERR_PEND_LOCKED:
+			break;
+	}
+	
+}
+uint8_t CheckTransmitBuffer(void)
+{
+	uint8_t errParser;
+	OSSemPend(pI2C,0,&errParser);
+	switch(errParser)
+	{
+		case OS_ERR_NONE:
+			return 1;;
+		case OS_ERR_TIMEOUT:
+			break;
+		case OS_ERR_PEND_ABORT:
+			break;
+		case OS_ERR_EVENT_TYPE:
+			break;
+		case OS_ERR_PEND_ISR:
+			break;
+		case OS_ERR_PEVENT_NULL:
+			break;
+		case OS_ERR_PEND_LOCKED:
+			break;
+	}
+	return 0;
 }
 uint8_t SetNewValue2transmit(const uint8_t value)
 {
@@ -43,8 +94,14 @@ void DMA1_Channel7_IRQHandler(void)
     {
         case 1:
 					//Transfer receive complete
-				__NOP();
-            break;
+					__NOP();
+					if(GetReceiveBufferValue(0))
+					{
+						bi2cToStm32.actiontype = GetReceiveBufferValue(1);
+						bi2cToStm32.adr = GetReceiveBufferValue(2);
+						bi2cToStm32.val = GetReceiveBufferValue(3);
+					}
+          break;
         case 0:
             //error
             break;
@@ -59,16 +116,16 @@ void DMA1_Channel6_IRQHandler(void)
     switch(DMA_Body_TX_IRQHandler())
     {
         case 1:
-					
-				#ifdef ENABLE_TIME_MEAS
-				ClkCnt = OSTimeGet();
-				#endif
-				__NOP();
-				//Transfer complete
-            break;
+					//Transfer transmit complete
+					#ifdef ENABLE_TIME_MEAS
+					ClkCnt = OSTimeGet();
+					#endif
+					OSSemPost(pI2C);
+					__NOP();	
+          break;
         case 0:
             //error
-				__NOP();
+					__NOP();
             break;
         case 2:
 					__NOP();

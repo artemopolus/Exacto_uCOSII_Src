@@ -27,6 +27,7 @@ extern ExactoBufferUint8Type ExBufBMP280;
 extern ExactoBufferUint8Type ExBufISM330;
 
 extern INT16U BaseDelay;
+extern volatile uint32_t CounterAppMessager;
 
 extern ExactoSensorSet lsm303;
 extern ExactoSensorSet bmp280;
@@ -382,13 +383,27 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             OS_FLAG_SET,
                                             perr);
                     if(*perr == OS_ERR_NONE) 
-											SendStr((int8_t*)"Switch to mode: only lsm303\n");
+												SendStr((int8_t*)"Switch to mode: only lsm303\n");
                     else
                     {
                         SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
                         uCOSFlagPost_Callback(perr);
                     }
                     break;
+								case CNTLSM303_ESM:
+									CounterAppMessager = 10;
+									OSFlagPost( pFlgSensors,
+                                            FLG_LSM303,
+                                            OS_FLAG_SET,
+                                            perr);
+									if(*perr == OS_ERR_NONE) 
+											SendStr((int8_t*)"Switch to mode: only lsm303\n");
+									else
+									{
+											SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
+											uCOSFlagPost_Callback(perr);
+									}
+									break;
 								case ONLYBMP280_ESM:
 									OSFlagPost( pFlgSensors,
                                             FLG_BMP280,
