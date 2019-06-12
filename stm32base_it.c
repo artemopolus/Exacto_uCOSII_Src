@@ -13,6 +13,11 @@
 #include "exacto_i2c_slave.h"
 
 extern OS_EVENT * pMailStm32;
+#ifdef ENABLE_TIME_MEAS
+
+extern uint32_t ClkCnt;
+
+#endif
 
 
 void Exacto_init_i2c_slave(void)
@@ -38,6 +43,7 @@ void DMA1_Channel7_IRQHandler(void)
     {
         case 1:
 					//Transfer receive complete
+				__NOP();
             break;
         case 0:
             //error
@@ -53,7 +59,11 @@ void DMA1_Channel6_IRQHandler(void)
     switch(DMA_Body_TX_IRQHandler())
     {
         case 1:
-					__NOP();
+					
+				#ifdef ENABLE_TIME_MEAS
+				ClkCnt = OSTimeGet();
+				#endif
+				__NOP();
 				//Transfer complete
             break;
         case 0:
@@ -72,6 +82,9 @@ void I2C1_EV_IRQHandler(void)
     switch(I2C_DMA_RXTX_EV_IRQHandler())
 		{
 			case 1:
+				#ifdef ENABLE_TIME_MEAS
+			OSTimeSet(0L);
+			#endif
 				//transmit
 			__NOP();
 				break;
