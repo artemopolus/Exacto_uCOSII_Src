@@ -32,27 +32,7 @@ void Exacto_init_i2c_slave(void)
 }
 void SetData2transmit(uint8_t * pData, const uint32_t datalen)
 {
-	uint8_t errParser;
-	OSSemPend(pI2C,0,&errParser);
-	switch(errParser)
-	{
-		case OS_ERR_NONE:
-			SetDT2W2TR_fixlen_i2c_dma_slave(pData,datalen);
-			break;
-		case OS_ERR_TIMEOUT:
-			break;
-		case OS_ERR_PEND_ABORT:
-			break;
-		case OS_ERR_EVENT_TYPE:
-			break;
-		case OS_ERR_PEND_ISR:
-			break;
-		case OS_ERR_PEVENT_NULL:
-			break;
-		case OS_ERR_PEND_LOCKED:
-			break;
-	}
-	
+	SetDT2W2TR_fixlen_i2c_dma_slave(pData,datalen);
 }
 uint8_t CheckTransmitBuffer(void)
 {
@@ -61,7 +41,8 @@ uint8_t CheckTransmitBuffer(void)
 	switch(errParser)
 	{
 		case OS_ERR_NONE:
-			return 1;;
+			Block_TransmitInit_i2c_dma_slave(0);
+			return 1;
 		case OS_ERR_TIMEOUT:
 			break;
 		case OS_ERR_PEND_ABORT:
@@ -77,16 +58,18 @@ uint8_t CheckTransmitBuffer(void)
 	}
 	return 0;
 }
-uint8_t SetNewValue2transmit(const uint8_t value)
+void ReleaseTransmitBuffer(void)
 {
-	return SetValue2W2TR_i2c_dma_slave(value);
+	Block_TransmitInit_i2c_dma_slave(1);
 }
 void SetInitTransmitData(void)
 {
 	uint8_t value = 1;
+	Block_TransmitInit_i2c_dma_slave(0);
 	while(SetValue2W2TR_i2c_dma_slave(value++))
 	{
 	}
+	Block_TransmitInit_i2c_dma_slave(1);
 }
 void DMA1_Channel7_IRQHandler(void)
 {

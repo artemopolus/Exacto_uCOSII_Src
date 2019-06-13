@@ -187,9 +187,10 @@ void DMA1_Channel7_IRQHandler(void);
 void DMA1_Channel6_IRQHandler(void);
 void I2C1_EV_IRQHandler(void);
 void I2C1_ER_IRQHandler(void);
-uint8_t SetNewValue2transmit(const uint8_t value);
 void SetInitTransmitData(void);
 uint8_t CheckTransmitBuffer(void);
+void ReleaseTransmitBuffer(void);
+void SetData2transmit(uint8_t * pData, const uint32_t datalen);
 #endif
 
 uint8_t FakeEx_lsm303(uint8_t * src1, uint8_t *src2) {for(uint8_t i = 1; i < 7;i++) {src1[i] = i;src2[i] = i;}return 1;}
@@ -589,7 +590,6 @@ static void App_lsm303(void * p_arg)
     uint8_t ready = 0,readyM = 0;
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
-    //SendStr((int8_t*)"TSKCRTD:lsm303\n");
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
@@ -597,14 +597,10 @@ static void App_lsm303(void * p_arg)
         FlagPendError_Callback(FLG_LSM303, error);
 
         ready = 0;
-        #ifdef ENABLE_LSM303_XL
-//        for(uint8_t i = 0; i < 3; i++)
-//        {
-            OS_ENTER_CRITICAL()
-            ready = read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01;    
-            OS_EXIT_CRITICAL()
-//            if(ready) break;
-//        }       
+    #ifdef ENABLE_LSM303_XL
+        OS_ENTER_CRITICAL()
+				ready = read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01;    
+				OS_EXIT_CRITICAL()      
         if(ready)
         {
             uint8_t flag;
@@ -637,8 +633,8 @@ static void App_lsm303(void * p_arg)
             Val_lsm303.s1_status = flag;
         }
         else    Val_lsm303.s1_status = 0;
-        #endif
-        #ifdef ENABLE_LSM303_M
+      #endif
+      #ifdef ENABLE_LSM303_M
         OS_ENTER_CRITICAL()
         readyM = read_lsm303ah_fst(LSM303AH_STATUS_REG_M)&0x08;
         OS_EXIT_CRITICAL()
@@ -937,32 +933,32 @@ static void App_Messager(void * p_arg)
                 }
                 else
                     SendStr((int8_t*)"No data in buffer\n");
-            #else
+            #endif
 						
 						#ifdef ENABLE_SAFE_CP2BUFFER
 						OSMutexPend(pBuffRdy,0,&errB);
+						Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
+						errB = OSMutexPost(pBuffRdy);
 						#endif
 						#ifdef ENABLE_CRITSEC_CP2BUFFER
             OS_ENTER_CRITICAL()
-						#endif
             Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
-						#ifdef ENABLE_CRITSEC_CP2BUFFER
             OS_EXIT_CRITICAL()
 						#endif
-						#ifdef ENABLE_SAFE_CP2BUFFER
-						errB = OSMutexPost(pBuffRdy);
-						#endif
+
             //Cnt_ExactoLBIdata2send = 0;
 						#ifdef TEST_I2C_SENDING
 						if( CheckTransmitBuffer())
 						{
-							uint32_t i = 1;
-							while (SetNewValue2transmit(i++));
+							SetInitTransmitData();
+							ReleaseTransmitBuffer();
+							SendStr((int8_t*)"Test data to buffer\n");
 						}
 						
-						#else
+						#endif
+						#ifdef STD_COPY
             if(Cnt_ExactoLBIdata2send > 3)
-            {
+            {фк
 							#ifdef ENABLE_TIME_MEAS
 								OSTimeSet(0L);
 							#endif
@@ -981,7 +977,6 @@ static void App_Messager(void * p_arg)
                 SendStr((int8_t*)"No data in buffer\n");
             }
 						#endif
-            #endif
 						OSTimeDly(BaseDelay);
         }
         else
