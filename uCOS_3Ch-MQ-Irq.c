@@ -587,96 +587,76 @@ static void App_lsm303(void * p_arg)
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
     OS_FLAGS flValue;    
-    uint8_t ready = 0,readyM = 0;
+	
+		uint8_t flagSensDataRdy = 0x00;
+		uint16_t mltCnt_XL = 1;
+		uint16_t mltCnt_M = 1;
+		uint8_t SensValue;
+	
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
+	
     while(DEF_TRUE)
     {
         flValue = OSFlagPend(pFlgSensors,FLG_LSM303,OS_FLAG_WAIT_SET_ALL,0,&error);
         if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:lsm303\n");
         FlagPendError_Callback(FLG_LSM303, error);
 
-        ready = 0;
-    #ifdef ENABLE_LSM303_XL
-        OS_ENTER_CRITICAL()
-				ready = read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01;    
-				OS_EXIT_CRITICAL()      
-        if(ready)
-        {
-            uint8_t flag;
-            // XL data block start
-            OS_ENTER_CRITICAL()
-            flag = multiread_lsm303ah_init(LSM303AH_OUT_X_L_A);
-            OS_EXIT_CRITICAL()
-            if (flag)
-            {
-                uint8_t value;
-                for(uint8_t i = 0; i < 6; i++)
-                {
-                    OS_ENTER_CRITICAL()
-                    flag = multiread_lsm303ah_data(&value);
-                    OS_EXIT_CRITICAL()
-                    if(flag)
-                        Val_lsm303.s1[i] = value;
-                    else
-                    {
-                        flag = 0;
-                        break;  
-                    }                        
-                }
-                OS_ENTER_CRITICAL()
-                multiread_lsm303ah_rls();
-                OS_EXIT_CRITICAL()
-                
-            }
-            // XL data block end
-            Val_lsm303.s1_status = flag;
-        }
-        else    Val_lsm303.s1_status = 0;
-      #endif
-      #ifdef ENABLE_LSM303_M
-        OS_ENTER_CRITICAL()
-        readyM = read_lsm303ah_fst(LSM303AH_STATUS_REG_M)&0x08;
-        OS_EXIT_CRITICAL()
-        if(readyM)
-        {
-            uint8_t flag;
-            OS_ENTER_CRITICAL()
-            flag = multiread_lsm303ah_init(LSM303AH_OUTX_L_REG_M);
-            OS_EXIT_CRITICAL()
-            // M data block start
-            if (flag)
-            {
-                uint8_t value;
-                for(uint8_t i = 0; i < 6; i++)
-                {
-                    OS_ENTER_CRITICAL()
-                    flag = multiread_lsm303ah_data(&value);
-                    OS_EXIT_CRITICAL()
-                    if(flag)
-                        Val_lsm303.s2[i] = value;
-                    else
-                    {
-                        flag = 0;
-                        break;  
-                    }                        
-                }
-                OS_ENTER_CRITICAL()
-                multiread_lsm303ah_rls();
-                OS_EXIT_CRITICAL()
-                
-            }
-            Val_lsm303.s2_status = flag;
-            // M data block end
-        }
-        else Val_lsm303.s2_status = 0;
-      #endif
+				flagSensDataRdy = 0x00;
+				//check XL
+			#ifdef ENABLE_LSM303_XL
+				if(lsm303.MultSens1){
+					if(lsm303.MultSens1 == mltCnt_XL){
+						mltCnt_XL ++;
+					}
+					else{
+						mltCnt_XL = 1;
+						flagSensDataRdy |= 0x01;
+					}
+				}
+			#endif
+			#ifdef ENABLE_LSM303_M
+				//check M
+				if(lsm303.MultSens2){
+					if(lsm303.MultSens2 == mltCnt_M){
+						mltCnt_M ++;
+					}
+					else{
+						mltCnt_M = 1;
+						flagSensDataRdy |= 0x02;
+					}
+				}
+			#endif
+				//check available data
+				if(flagSensDataRdy&0x01){
+					OS_ENTER_CRITICAL()
+					if(read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01)
+						flagSensDataRdy |= 0x04;
+					OS_EXIT_CRITICAL()
+				}
+				if(flagSensDataRdy&0x04){
+					OS_ENTER_CRITICAL()
+					Val_lsm303.s1_status = multiread_lsm303ah_fst(LSM303AH_OUT_X_L_A,Val_lsm303.s1,6);
+					OS_EXIT_CRITICAL()
+				}
+				if(flagSensDataRdy&0x02){
+					OS_ENTER_CRITICAL()
+					if(read_lsm303ah_fst(LSM303AH_STATUS_REG_M)&0x08)
+						flagSensDataRdy |= 0x08;
+					OS_EXIT_CRITICAL()
+				}
+				//read neccesary data
+				if(flagSensDataRdy&0x08){
+					OS_ENTER_CRITICAL()
+					Val_lsm303.s2_status = multiread_lsm303ah_fst(LSM303AH_OUTX_L_REG_M,Val_lsm303.s2,6);
+					OS_EXIT_CRITICAL()
+				}
       #ifdef FAKE_LSM303
         ready = FakeEx_lsm303(Val_lsm303.s1,Val_lsm303.s2);
         Val_lsm303.s1_status = 1;
         Val_lsm303.s2_status = 1;
       #endif
-        if(ready||readyM)
+        if(flagSensDataRdy)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
             {
@@ -882,12 +862,16 @@ static void App_Messager(void * p_arg)
         {
 						if(CounterAppMessager > 1)
 						{
+							OS_ENTER_CRITICAL()
 							CounterAppMessager--;
+							OS_EXIT_CRITICAL()
 						} else if (CounterAppMessager == 1)
 						{
 							//stop all
 							ExactoStm32StatesChanged_Callback(0, 0, &err);
+							OS_ENTER_CRITICAL()
 							CounterAppMessager = 0;
+							OS_EXIT_CRITICAL()
 						}
             #ifdef ENABLE_FIFO_BUFFER
                 tmplen = ExBufLSM303.datalen;
