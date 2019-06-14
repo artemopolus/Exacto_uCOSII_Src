@@ -630,10 +630,10 @@ static void App_lsm303(void * p_arg)
 				if(flagSensDataRdy&0x01){
 					OS_ENTER_CRITICAL()
 					if(read_lsm303ah_fst(LSM303AH_STATUS_A)&0x01)
-						flagSensDataRdy |= 0x04;
+						flagSensDataRdy |= 0x10;
 					OS_EXIT_CRITICAL()
 				}
-				if(flagSensDataRdy&0x04){
+				if(flagSensDataRdy&0x10){
 					OS_ENTER_CRITICAL()
 					Val_lsm303.s1_status = multiread_lsm303ah_fst(LSM303AH_OUT_X_L_A,Val_lsm303.s1,6);
 					OS_EXIT_CRITICAL()
@@ -641,11 +641,11 @@ static void App_lsm303(void * p_arg)
 				if(flagSensDataRdy&0x02){
 					OS_ENTER_CRITICAL()
 					if(read_lsm303ah_fst(LSM303AH_STATUS_REG_M)&0x08)
-						flagSensDataRdy |= 0x08;
+						flagSensDataRdy |= 0x20;
 					OS_EXIT_CRITICAL()
 				}
 				//read neccesary data
-				if(flagSensDataRdy&0x08){
+				if(flagSensDataRdy&0x20){
 					OS_ENTER_CRITICAL()
 					Val_lsm303.s2_status = multiread_lsm303ah_fst(LSM303AH_OUTX_L_REG_M,Val_lsm303.s2,6);
 					OS_EXIT_CRITICAL()
@@ -734,31 +734,92 @@ static void App_ism330(void * p_arg)
     OS_FLAGS flValue;
     SensorData  Val_ism330;
     Val_ism330.pSensor = FLG_ISM330;
-    //SendStr((int8_t*)"TSKCRTD:ism330\n");
+	
+		uint8_t tmpflag;
+	
+		uint8_t flagSensDataRdy = 0x00;
+		uint16_t mltCnt_XL = 1;
+		uint16_t mltCnt_G = 1;
+		uint16_t mltCnt_T = 1;
+    
     while(DEF_TRUE)
     {
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
 //        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
 
-		flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
-		if(error == OS_ERR_NONE)
-		{
-        //FlagPendError_Callback(FLG_ISM330, error);
-		for(uint8_t i = 0; i < 3; i++)
-		{
-        OS_ENTER_CRITICAL()
-        //    ready = GetGXLData_ism330(Val_ism330.s1);
-			#ifdef FAKE_ISM330
-				ready = FakeEx_ism330(Val_ism330.sL);
-			#else		
-				ready = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
-			#endif
-        OS_EXIT_CRITICAL()
-			if(ready) break;
-		}
-        if(ready)
+			flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
+			if(error == OS_ERR_NONE)
+			{
+				flagSensDataRdy = 0;
+				#ifdef ENABLE_ISM330_T
+				if(ism330.MultSens1){
+					if(ism330.MultSens1 == mltCnt_T){
+						mltCnt_T ++;
+					}
+					else{
+						mltCnt_T = 1;
+						flagSensDataRdy |= 0x01;
+					}
+				}
+				#endif
+				#ifdef ENABLE_ISM330_G
+				if(ism330.MultSens2){
+					if(ism330.MultSens2 == mltCnt_G){
+						mltCnt_G ++;
+					}
+					else{
+						mltCnt_G = 1;
+						flagSensDataRdy |= 0x02;
+					}
+				}
+				#endif
+				#ifdef ENABLE_ISM330_XL
+				if(ism330.MultSens3){
+					if(ism330.MultSens3 == mltCnt_XL){
+						mltCnt_XL ++;
+					}
+					else{
+						mltCnt_XL = 1;
+						flagSensDataRdy |= 0x04;
+					}
+				}
+				#endif
+				
+				//check available data
+				if(flagSensDataRdy&(0x01|0x02|0x04)){
+					OS_ENTER_CRITICAL()
+					tmpflag = GetFlagDRDY_ism330();
+					OS_EXIT_CRITICAL()
+					if((flagSensDataRdy&0x01)&&(tmpflag&0x04))
+						flagSensDataRdy |= 0x10;
+					if((flagSensDataRdy&0x02)&&(tmpflag&0x02))
+						flagSensDataRdy |= 0x20;
+					if((flagSensDataRdy&0x04)&&(tmpflag&0x01))
+						flagSensDataRdy |= 0x40;
+				}
+				Val_ism330.sL_status = 0;
+				if((flagSensDataRdy & (0xF0)) == (0x10|0x20|0x40)){
+					Val_ism330.sL_status = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
+				}
+				else{ 
+					if((flagSensDataRdy & 0xF0) == 0x10)
+						Val_ism330.s1_status = GetTData_ism330(Val_ism330.s1);
+					if((flagSensDataRdy & 0xF0) == 0x20)
+						Val_ism330.s1_status = GetGData_ism330(Val_ism330.s2);
+					if((flagSensDataRdy & 0xF0) == 0x40)
+						Val_ism330.sL_status = GetXLData_ism330(Val_ism330.sL);
+					switch(flagSensDataRdy & (0xF0))
+					{
+						case (0x30):
+							if(GetTGData_ism330(Val_ism330.sL))		Val_ism330.sL_status = 2;
+							break;
+						case (0x60):
+							if(GetGXLData_ism330(Val_ism330.sL))	Val_ism330.sL_status = 3;
+							break;
+					}
+				}
+        if(flagSensDataRdy)
         {
-            Val_ism330.sL_status = 1;
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
             {
                 __NOP();
@@ -774,7 +835,7 @@ static void App_ism330(void * p_arg)
             //OSTimeDly(Parameters->TDiscr);
         }
     //else OSTimeDly(OS_TIME_1mS);
-		OSTimeDly(Parameters->TDiscr);
+				OSTimeDly(Parameters->TDiscr);
 		}
 		OSTimeDly(Parameters->TDiscr);
     }
