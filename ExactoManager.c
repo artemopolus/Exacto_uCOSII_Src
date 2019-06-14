@@ -83,116 +83,91 @@ void uCOSFlagPost_Callback( uint8_t * perr)
 
 uint8_t ExactoLBIdataCLR(ExactoLBIdata * src)
 {
-    src->cnt_lsm303 = 0;
+    src->cnt_lsm303_xl = 0;
+		src->cnt_lsm303_m = 0;
     src->cnt_bmp280 = 0;
-    src->cnt_ism330 = 0;
+    src->cnt_ism330_t = 0;
+		src->cnt_ism330_g = 0;
+		src->cnt_ism330_xl = 0;
     return 1;
+}
+uint32_t cpExactoLBIdata2arraypart(uint8_t * dst, const uint32_t dstlen, const uint32_t allcount, uint8_t * src, const uint8_t src_len)
+{
+	uint32_t res = allcount;
+	if((src_len)&&(dstlen > ((uint32_t)src_len + allcount)))
+		{
+			for(uint32_t i = 0; i < src_len; i++) 
+				dst[i + allcount] = src[i];
+			res += src_len;
+		}
+	return res;
 }
 
 uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint32_t dstlen)
 {
-    if(!(src->cnt_lsm303 || src->cnt_bmp280 || src->cnt_ism330))   return 0;
-    dst[0] = src->cnt_lsm303;
-    dst[1] = src->cnt_bmp280;
-    dst[2] = src->cnt_ism330;
-		uint32_t allcount = 3;
+    if(!(src->cnt_lsm303_xl || src->cnt_lsm303_m || src->cnt_bmp280 || src->cnt_ism330_t || src->cnt_ism330_g || src->cnt_ism330_xl))   return 0;
+    dst[0] = (uint8_t)src->cnt_lsm303_xl << 8;
+		dst[1] = (uint8_t)src->cnt_lsm303_xl;
+		dst[2] = src->cnt_lsm303_m;
+    dst[3] = src->cnt_bmp280;
+    dst[4] = src->cnt_ism330_t;
+		dst[5] = (uint8_t)src->cnt_ism330_g << 8;
+		dst[6] = (uint8_t)src->cnt_ism330_g;
+		dst[7] = (uint8_t)src->cnt_ism330_xl << 8;
+		dst[8] = (uint8_t)src->cnt_ism330_xl;
+		uint32_t allcount = EXACTOLBIARRAYCNT;
 		
-		#ifdef ENABLE_FST_CP2ARRAY
-		if((src->cnt_lsm303 + src->cnt_bmp280 + src->cnt_ism330 + 3) < dstlen)
-		{
-			uint32_t maxcounter = (src->cnt_lsm303 > src->cnt_bmp280) ? src->cnt_lsm303 : src->cnt_bmp280;
-			maxcounter = (src->cnt_ism330 > maxcounter) ? src->cnt_ism330 : maxcounter;
-			for(uint32_t i = 0; i < maxcounter; i++)
-			{
-				if(i < src->cnt_lsm303)
-					dst[3 + i] = src->lsm303[i];
-				if(i < src->cnt_bmp280)
-					dst[3 + src->cnt_lsm303 + i] = src->bmp280[i];
-				if(i < src->cnt_ism330)
-					dst[3 + src->cnt_bmp280 + src->cnt_lsm303 + i] = src->ism330[i];
-			}
-		}
-		#endif
-		if((src->cnt_lsm303)&&(dstlen > (src->cnt_lsm303 + allcount)))
-		{
-			for(uint32_t i = 0; i < src->cnt_lsm303; i++) 
-				dst[i + allcount] = src->lsm303[i];
-			allcount += src->cnt_lsm303;
-		}
-		
-		if((src->cnt_bmp280)&&(dstlen >(src->cnt_bmp280 + allcount)))
-		{
-			for(uint32_t i = 0; i < src->cnt_bmp280; i++) 
-				dst[i + allcount] = src->bmp280[i];
-			allcount += src->cnt_bmp280;
-		}
-		
-		if((src->cnt_ism330)&&(dstlen >(src->cnt_ism330 + allcount)))
-		{
-			for(uint32_t i = 0; i < src->cnt_ism330; i++) 
-				dst[i + allcount] = src->ism330[i];
-			allcount += src->cnt_ism330;
-		}
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->lsm303_xl,src->cnt_lsm303_xl);
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->lsm303_xl,src->cnt_lsm303_m);
+	
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->bmp280,src->cnt_bmp280);
+	
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->ism330_t,src->cnt_ism330_t);
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->ism330_g,src->cnt_ism330_g);
+		allcount = cpExactoLBIdata2arraypart(dst,dstlen,allcount,src->ism330_xl,src->cnt_ism330_xl);
+
+	
 		//uint8_t allcount = (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
-    src->cnt_lsm303 = 0;
-    src->cnt_bmp280 = 0;
-    src->cnt_ism330 = 0;
+    ExactoLBIdataCLR(src);
     return allcount;
 }
 
-void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
-{
-    for(uint8_t i = 0; i < 6; i++) dst[*ptr + i] = src[i] ;
-    * ptr += 6;
-    if(* ptr >= EXACTOLBIDATASIZE)
-    {
-        * ptr = 0;
-    }
-}
+//void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)
+//{
+//    for(uint8_t i = 0; i < 6; i++) dst[*ptr + i] = src[i] ;
+//    * ptr += 6;
+//    if(* ptr >= EXACTOLBIDATASIZE)
+//    {
+//        * ptr = 0;
+//    }
+//}
 
 void SensorData2lsm303(SensorData * src)
 {
-    //
-    #ifdef ENABLE_FIFO_BUFFER
+		uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303_xl;
     if(src->s1_status)
     {
-        for(uint8_t i = 0; i < 6; i++)
+        if((pData + 6) > EXACTOLSM303SZ_XL)
         {
-            pshfrc_exbu8(&ExBufLSM303,src->s1[i]);
-        }
-    }
-    if(src->s2_status)
-    {
-        for(uint8_t i = 0; i < 6; i++)
-        {
-            pshfrc_exbu8(&ExBufLSM303,src->s2[i]);
-        }
-    }
-    #else
-	uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303;
-    if(src->s1_status)
-    {
-        if((pData + 6) > EXACTOLSM303SZ)
-        {
-            ExactoBuffer.cnt_lsm303 = 0;
+            ExactoBuffer.cnt_lsm303_xl = 0;
             pData = 0;
 					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
         }
-        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->s1[i];
-        ExactoBuffer.cnt_lsm303 += 6;
+        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303_xl[pData + i] = src->s1[i];
+        ExactoBuffer.cnt_lsm303_xl += 6;
     }
+		pData = ExactoBuffer.cnt_lsm303_m;
     if(src->s2_status)
     {
-        if((ExactoBuffer.cnt_lsm303 + 6) > EXACTOLSM303SZ)
+        if((ExactoBuffer.cnt_lsm303_m + 6) > EXACTOLSM303SZ_M)
         {
-            ExactoBuffer.cnt_lsm303 = 6;
+            ExactoBuffer.cnt_lsm303_m = 6;
             pData = 0;
 					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
         }
-        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303[pData + 6 + i] = src->s2[i];
-        ExactoBuffer.cnt_lsm303 += 6;
+        for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303_m[pData + i] = src->s2[i];
+        ExactoBuffer.cnt_lsm303_m += 6;
     }
-	#endif
 }
 void SensorData2bmp280(SensorData * src)
 {
@@ -219,32 +194,37 @@ void SensorData2bmp280(SensorData * src)
 	}
     #endif
 }
+void cpPart2ism330(uint16_t * pData, uint8_t *dst, uint8_t * src, const uint8_t count, const uint8_t st, const uint16_t max)
+{
+	if((*pData + count) > max){
+			*pData = 0;
+	}
+	for(uint8_t i = 0; i < count ; i++) 	dst[*pData + i] = src[st + i];
+	*pData += count;
+}
 void SensorData2ism330(SensorData * src)
 {
-    #ifdef ENABLE_FIFO_BUFFER
-    if(src->sL_status)
-    {
-        for(uint8_t i = 0; i < 6; i++)
-        {
-            pshfrc_exbu8(&ExBufISM330,src->sL[i]);
-        }
-    }
-
-    #else
-	if(src->sL_status)
+	switch(src->sL_status)
 	{
-				
-	uint8_t i = 0, pData = ExactoBuffer.cnt_ism330;
-		if((ExactoBuffer.cnt_ism330 + 6) > EXACTOISM330SZ)
-        {
-            ExactoBuffer.cnt_ism330 = 6;
-            pData = 0;
-					SendStr((int8_t*)"\nBUF_ERR:ism330\n");
-        }
-	for(i = 0; i < 14 ; i++) 	ExactoBuffer.lsm303[pData + i] = src->sL[i];
-	ExactoBuffer.cnt_ism330 += 14;
+		case 1:
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_t,ExactoBuffer.ism330_t,src->sL,2,0,EXACTOISM330SZ_T);
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_g,ExactoBuffer.ism330_g,src->sL,6,2,EXACTOISM330SZ_G);
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_xl,ExactoBuffer.ism330_xl,src->sL,6,8,EXACTOISM330SZ_XL);
+			break;
+		case 2:
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_t,ExactoBuffer.ism330_t,src->sL,2,0,EXACTOISM330SZ_T);
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_g,ExactoBuffer.ism330_g,src->sL,6,2,EXACTOISM330SZ_G);
+			break;
+		case 3:
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_g,ExactoBuffer.ism330_g,src->sL,6,0,EXACTOISM330SZ_G);
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_xl,ExactoBuffer.ism330_xl,src->sL,6,6,EXACTOISM330SZ_XL);
+			break;
+		case 4:
+			cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_xl,ExactoBuffer.ism330_xl,src->sL,6,0,EXACTOISM330SZ_XL);
+			break;
 	}
-    #endif
+	if(src->s1_status)	cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_t,ExactoBuffer.ism330_t,src->sL,2,0,EXACTOISM330SZ_T);
+	if(src->s2_status)	cpPart2ism330((uint16_t *)&ExactoBuffer.cnt_ism330_g,ExactoBuffer.ism330_g,src->sL,6,0,EXACTOISM330SZ_G);
 }
 
 void App_stm32(void * p_arg)
@@ -497,9 +477,7 @@ void        App_buffer(void * p_arg)
 		#ifdef ENABLE_SAFE_CP2BUFFER
 		uint8_t errB;
 		#endif
-    ExactoBuffer.cnt_lsm303 = 0;
-    ExactoBuffer.cnt_bmp280 = 0;
-    ExactoBuffer.cnt_ism330 = 0;
+	ExactoLBIdataCLR(&ExactoBuffer);
     while(DEF_TRUE)
     {
         ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);

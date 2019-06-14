@@ -730,7 +730,7 @@ static void App_ism330(void * p_arg)
 	ExactoSensorSet * Parameters = (ExactoSensorSet*)p_arg;
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
-    uint8_t ready = 0;
+//    uint8_t ready = 0;
     OS_FLAGS flValue;
     SensorData  Val_ism330;
     Val_ism330.pSensor = FLG_ISM330;
@@ -797,6 +797,8 @@ static void App_ism330(void * p_arg)
 					if((flagSensDataRdy&0x04)&&(tmpflag&0x01))
 						flagSensDataRdy |= 0x40;
 				}
+				Val_ism330.s1_status = 0;
+				Val_ism330.s2_status = 0;
 				Val_ism330.sL_status = 0;
 				if((flagSensDataRdy & (0xF0)) == (0x10|0x20|0x40)){
 					Val_ism330.sL_status = Get_T_G_XL_uint8_ism330(Val_ism330.sL);
@@ -805,9 +807,10 @@ static void App_ism330(void * p_arg)
 					if((flagSensDataRdy & 0xF0) == 0x10)
 						Val_ism330.s1_status = GetTData_ism330(Val_ism330.s1);
 					if((flagSensDataRdy & 0xF0) == 0x20)
-						Val_ism330.s1_status = GetGData_ism330(Val_ism330.s2);
-					if((flagSensDataRdy & 0xF0) == 0x40)
-						Val_ism330.sL_status = GetXLData_ism330(Val_ism330.sL);
+						Val_ism330.s2_status = GetGData_ism330(Val_ism330.s2);
+					if((flagSensDataRdy & 0xF0) == 0x40){
+						if(GetXLData_ism330(Val_ism330.sL))	Val_ism330.sL_status = 4;
+					}
 					switch(flagSensDataRdy & (0xF0))
 					{
 						case (0x30):
@@ -854,8 +857,8 @@ static void App_Messager(void * p_arg)
     INT8U err;
 
     OS_CPU_SR cpu_sr = 0;
-    uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 7];
-		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
+    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE + 4 + EXACTOLBIARRAYCNT];
+		const uint32_t Max_ExactoLBIdata2send = EXACTOLBIDATASIZE + EXACTOLBIARRAYCNT;
     uint32_t Cnt_ExactoLBIdata2send = 0;
     
     
