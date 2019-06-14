@@ -791,24 +791,11 @@ static void App_Messager(void * p_arg)
 		uint8_t errB;
 		#endif
     INT8U err;
-    #ifdef ENABLE_FIFO_BUFFER
-		uint8_t str2send[3*EXACTO_BUFLEN_256+5] = {0}; 
-    const int str2send_len = 3*EXACTO_BUFLEN_256+5;
-    str2send[0] = 'h';
-    str2send[5] = 0;
-    str2send[6] = 0;
-    str2send[7] = 0;
-    uint8_t flag2send = 0;
-    uint8_t tmplen = 0;
-    uint32_t ptr2nextdata = 0;
-    #else
+
     OS_CPU_SR cpu_sr = 0;
     uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 7];
 		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
     uint8_t Cnt_ExactoLBIdata2send = 0;
-
-
-    #endif
     
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
@@ -872,51 +859,7 @@ static void App_Messager(void * p_arg)
 							CounterAppMessager = 0;
 							OS_EXIT_CRITICAL()
 						}
-            #ifdef ENABLE_FIFO_BUFFER
-                tmplen = ExBufLSM303.datalen;
-                if(grball_exbu8(&ExBufLSM303,&str2send[8]))
-                {
-                    ptr2nextdata = 8 + tmplen;
-                    str2send[5] = tmplen;
-                    flag2send = 1;
-                }
-                else
-                {
-                    ptr2nextdata = 8;
-                    str2send[5] = 0;
-                }
-                tmplen = ExBufBMP280.datalen;
-                if(grball_exbu8(&ExBufBMP280,&str2send[ptr2nextdata]))
-                {
-                    ptr2nextdata += tmplen;
-                    str2send[6] = ptr2nextdata;
-                    flag2send = 1;
-                }
-                else
-                {
-                    str2send[6] = 0;
-                }
-                tmplen = ExBufISM330.datalen;
-                if(grball_exbu8(&ExBufISM330,&str2send[ptr2nextdata]))
-                {
-                    ptr2nextdata += tmplen;
-                    str2send[7] = ptr2nextdata;
-                    flag2send = 1;
-                }
-                else
-                {
-                    str2send[7] = 0;
-                }
-                if(flag2send)
-                {
-                    str2send[1] = (uint8_t)CounterDelay << 24;
-                    str2send[2] = (uint8_t)CounterDelay << 16;
-                    str2send[3] = (uint8_t)CounterDelay << 8;
-                    str2send[4] = (uint8_t)CounterDelay;
-                }
-                else
-                    SendStr((int8_t*)"No data in buffer\n");
-            #endif
+            
 						
 						ExactoLBIdata2send[0] = (uint8_t)CounterDelay << 24;
 						ExactoLBIdata2send[1] = (uint8_t)CounterDelay << 16;
