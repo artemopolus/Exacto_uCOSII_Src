@@ -65,6 +65,9 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 				case 0:
 						OS_ENTER_CRITICAL()
 						ism330.TDiscr = OS_TIME_10mS;
+						ism330.MultSens1 = 1;
+						ism330.MultSens2 = 1;
+						ism330.MultSens3 = 1;
 						OS_EXIT_CRITICAL()
 						SendStr((int8_t*)"SETFREQ:ism330:10ms\n");
 						break;
@@ -178,12 +181,16 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
             case 0:
                 OS_ENTER_CRITICAL()
                 lsm303.TDiscr = OS_TIME_10mS;
+								lsm303.MultSens1 = 1;
+								lsm303.MultSens2 = 1;
                 OS_EXIT_CRITICAL()
                 SendStr((int8_t*)"SETFREQ:lsm303:10ms\n");
                 break;
             case 1:
                 OS_ENTER_CRITICAL()
                 lsm303.TDiscr = (INT16U)12; 
+								lsm303.MultSens1 = 1;
+								lsm303.MultSens2 = 8;
                 OS_EXIT_CRITICAL()
                 SendStr((int8_t*)"SETFREQ:lsm303:1.2ms\n");
                 break;

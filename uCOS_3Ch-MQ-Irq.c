@@ -589,8 +589,8 @@ static void App_lsm303(void * p_arg)
     OS_FLAGS flValue;    
 	
 		uint8_t flagSensDataRdy = 0x00;
-		uint16_t mltCnt_XL = 1;
-		uint16_t mltCnt_M = 1;
+		uint8_t mltCnt_XL = 1;
+		uint8_t mltCnt_M = 1;
 	
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
@@ -606,11 +606,11 @@ static void App_lsm303(void * p_arg)
 			#ifdef ENABLE_LSM303_XL
 				if(lsm303.MultSens1){
 					if(lsm303.MultSens1 == mltCnt_XL){
-						mltCnt_XL ++;
-					}
-					else{
 						mltCnt_XL = 1;
 						flagSensDataRdy |= 0x01;
+					}
+					else{
+						mltCnt_XL ++;
 					}
 				}
 			#endif
@@ -618,11 +618,11 @@ static void App_lsm303(void * p_arg)
 				//check M
 				if(lsm303.MultSens2){
 					if(lsm303.MultSens2 == mltCnt_M){
-						mltCnt_M ++;
-					}
-					else{
 						mltCnt_M = 1;
 						flagSensDataRdy |= 0x02;
+					}
+					else{
+						mltCnt_M ++;
 					}
 				}
 			#endif
@@ -738,9 +738,9 @@ static void App_ism330(void * p_arg)
 		uint8_t tmpflag;
 	
 		uint8_t flagSensDataRdy = 0x00;
-		uint16_t mltCnt_XL = 1;
-		uint16_t mltCnt_G = 1;
-		uint16_t mltCnt_T = 1;
+		uint8_t mltCnt_XL = 1;
+		uint8_t mltCnt_G = 1;
+		uint8_t mltCnt_T = 1;
     
     while(DEF_TRUE)
     {
@@ -754,33 +754,33 @@ static void App_ism330(void * p_arg)
 				#ifdef ENABLE_ISM330_T
 				if(ism330.MultSens1){
 					if(ism330.MultSens1 == mltCnt_T){
-						mltCnt_T ++;
-					}
-					else{
 						mltCnt_T = 1;
 						flagSensDataRdy |= 0x01;
+					}
+					else{
+						mltCnt_T ++;
 					}
 				}
 				#endif
 				#ifdef ENABLE_ISM330_G
 				if(ism330.MultSens2){
 					if(ism330.MultSens2 == mltCnt_G){
-						mltCnt_G ++;
-					}
-					else{
 						mltCnt_G = 1;
 						flagSensDataRdy |= 0x02;
+					}
+					else{
+						mltCnt_G ++;
 					}
 				}
 				#endif
 				#ifdef ENABLE_ISM330_XL
 				if(ism330.MultSens3){
 					if(ism330.MultSens3 == mltCnt_XL){
-						mltCnt_XL ++;
-					}
-					else{
 						mltCnt_XL = 1;
 						flagSensDataRdy |= 0x04;
+					}
+					else{
+						mltCnt_XL ++;
 					}
 				}
 				#endif
