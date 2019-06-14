@@ -804,7 +804,7 @@ static void App_Messager(void * p_arg)
     uint32_t ptr2nextdata = 0;
     #else
     OS_CPU_SR cpu_sr = 0;
-    uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3];
+    uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 7];
 		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
     uint8_t Cnt_ExactoLBIdata2send = 0;
     uint8_t headerCNT[5];
@@ -919,48 +919,54 @@ static void App_Messager(void * p_arg)
                     SendStr((int8_t*)"No data in buffer\n");
             #endif
 						
-						#ifdef ENABLE_SAFE_CP2BUFFER
-						OSMutexPend(pBuffRdy,0,&errB);
-						Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
-						errB = OSMutexPost(pBuffRdy);
-						#endif
-						#ifdef ENABLE_CRITSEC_CP2BUFFER
-            OS_ENTER_CRITICAL()
-            Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
-            OS_EXIT_CRITICAL()
-						#endif
+						ExactoLBIdata2send[0] = (uint8_t)CounterDelay << 24;
+						ExactoLBIdata2send[1] = (uint8_t)CounterDelay << 16;
+						ExactoLBIdata2send[2] = (uint8_t)CounterDelay << 8;
+						ExactoLBIdata2send[3] = (uint8_t)CounterDelay;
 
-            //Cnt_ExactoLBIdata2send = 0;
-						#ifdef TEST_I2C_SENDING
-						if( CheckTransmitBuffer())
+						if(flags&FLG_TEST)
 						{
-							SetInitTransmitData();
-							ReleaseTransmitBuffer();
-							SendStr((int8_t*)"Test data to buffer\n");
+							//Cnt_ExactoLBIdata2send = 0;
+							#ifdef TEST_I2C_SENDING
+							if( CheckTransmitBuffer())
+							{
+								SetInitTransmitData();
+								ReleaseTransmitBuffer();
+							}
+							#endif
+						}
+						else{
+							#ifdef ENABLE_SAFE_CP2BUFFER
+							OSMutexPend(pBuffRdy,0,&errB);
+							Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
+							errB = OSMutexPost(pBuffRdy);
+							#endif
+							#ifdef ENABLE_CRITSEC_CP2BUFFER
+							OS_ENTER_CRITICAL()
+							Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send);
+							OS_EXIT_CRITICAL()
+							#endif
 						}
 						
-						#endif
-						#ifdef STD_COPY
-            if(Cnt_ExactoLBIdata2send > 3)
-            {фк
-							#ifdef ENABLE_TIME_MEAS
-								OSTimeSet(0L);
+						
+						
+						if(!(flags&FLG_UART))
+						{
+							#ifdef USART_SEND_MSG
+							if(Cnt_ExactoLBIdata2send > 3){
+								#ifdef ENABLE_TIME_MEAS
+									OSTimeSet(0L);
+								#endif
+									ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
+									SendStr((s8*)"h");
+									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send +4);
+									SendStr((int8_t*)"\n");
+							}
+							else{
+									SendStr((int8_t*)"No data in buffer\n");
+							}
 							#endif
-                ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
-                headerCNT[1] = (uint8_t)CounterDelay << 24;
-                headerCNT[2] = (uint8_t)CounterDelay << 16;
-                headerCNT[3] = (uint8_t)CounterDelay << 8;
-                headerCNT[4] = (uint8_t)CounterDelay;
-                //SendStr((int8_t*)"h");
-                SendStr((s8*)headerCNT);
-                SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
-                SendStr((int8_t*)"\n");
-            }
-            else
-            {
-                SendStr((int8_t*)"No data in buffer\n");
-            }
-						#endif
+						}
 						OSTimeDly(BaseDelay);
         }
         else
