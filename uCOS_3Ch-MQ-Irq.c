@@ -795,7 +795,7 @@ static void App_Messager(void * p_arg)
     OS_CPU_SR cpu_sr = 0;
     uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 7];
 		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
-    uint8_t Cnt_ExactoLBIdata2send = 0;
+    uint32_t Cnt_ExactoLBIdata2send = 0;
     
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
@@ -865,17 +865,18 @@ static void App_Messager(void * p_arg)
 						ExactoLBIdata2send[1] = (uint8_t)CounterDelay << 16;
 						ExactoLBIdata2send[2] = (uint8_t)CounterDelay << 8;
 						ExactoLBIdata2send[3] = (uint8_t)CounterDelay;
-
+						
+						#ifdef ENABLE_TEST_MSG
+						if(1)
+						#else
 						if(flags&FLG_TEST)
+						#endif
 						{
-							//Cnt_ExactoLBIdata2send = 0;
-							#ifdef TEST_I2C_SENDING
-							if( CheckTransmitBuffer())
+							for (uint32_t i = 0; i < Max_ExactoLBIdata2send; i++)
 							{
-								SetInitTransmitData();
-								ReleaseTransmitBuffer();
+								ExactoLBIdata2send[i+4] = i + 1;
 							}
-							#endif
+							Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
 						}
 						else{
 							#ifdef ENABLE_SAFE_CP2BUFFER
@@ -891,23 +892,36 @@ static void App_Messager(void * p_arg)
 						}
 						
 						
-						
+						#ifdef UART_SEND_MSG
+						if(1)
+						#else
 						if(!(flags&FLG_UART))
+						#endif
 						{
-							#ifdef USART_SEND_MSG
 							if(Cnt_ExactoLBIdata2send > 3){
 								#ifdef ENABLE_TIME_MEAS
 									OSTimeSet(0L);
 								#endif
 									ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
 									SendStr((s8*)"h");
-									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send +4);
+									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send + 4);
 									SendStr((int8_t*)"\n");
 							}
 							else{
 									SendStr((int8_t*)"No data in buffer\n");
 							}
-							#endif
+						}
+						#ifdef I2C_SEND_MSG
+						if(1)
+						#else
+						if(!(flags&FLG_I2C))
+						#endif
+						{
+							if( CheckTransmitBuffer())
+							{
+								SetData2transmit(ExactoLBIdata2send,Cnt_ExactoLBIdata2send + 4);
+								ReleaseTransmitBuffer();
+							}
 						}
 						OSTimeDly(BaseDelay);
         }
