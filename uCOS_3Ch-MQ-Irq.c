@@ -591,7 +591,6 @@ static void App_lsm303(void * p_arg)
 		uint8_t flagSensDataRdy = 0x00;
 		uint16_t mltCnt_XL = 1;
 		uint16_t mltCnt_M = 1;
-		uint8_t SensValue;
 	
     SensorData Val_lsm303;
     Val_lsm303.pSensor = FLG_LSM303;
@@ -807,8 +806,8 @@ static void App_Messager(void * p_arg)
     uint8_t ExactoLBIdata2send[EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 7];
 		const uint32_t Max_ExactoLBIdata2send = EXACTOLSM303SZ + EXACTOBMP280SZ + EXACTOISM330SZ + 3;
     uint8_t Cnt_ExactoLBIdata2send = 0;
-    uint8_t headerCNT[5];
-    headerCNT[0] = 'h';
+
+
     #endif
     
     

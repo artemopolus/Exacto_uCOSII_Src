@@ -432,6 +432,24 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                         uCOSFlagPost_Callback(perr);
                     }
                     break;
+								case DISABLE_UART_ESM:
+									OSFlagPost( pFlgSensors,
+																	FLG_UART,
+																	OS_FLAG_SET,
+																	perr);
+									break;
+								case DISABLE_I2C_ESM:
+									OSFlagPost( pFlgSensors,
+																	FLG_I2C,
+																	OS_FLAG_SET,
+																	perr);
+									break;
+								case ENABLE_TEST_ESM:
+									OSFlagPost( pFlgSensors,
+																	FLG_TEST,
+																	OS_FLAG_SET,
+																	perr);
+									break;
             }
             break;
         case SENDFREQ_ES32A:
