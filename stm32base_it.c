@@ -36,6 +36,7 @@ void SetData2transmit(uint8_t * pData, const uint32_t datalen)
 }
 uint8_t CheckTransmitBuffer(void)
 {
+	#ifdef ENABLE_I2C_PENDING
 	uint8_t errParser;
 	OSSemPend(pI2C,0,&errParser);
 	switch(errParser)
@@ -57,6 +58,10 @@ uint8_t CheckTransmitBuffer(void)
 			break;
 	}
 	return 0;
+	#else
+	Block_TransmitInit_i2c_dma_slave(0);
+	return 1;
+	#endif
 }
 void ReleaseTransmitBuffer(void)
 {
@@ -78,11 +83,22 @@ void DMA1_Channel7_IRQHandler(void)
         case 1:
 					//Transfer receive complete
 					__NOP();
-					if(GetReceiveBufferValue(0))
+					if(GetReceiveBufferValue(0) == 0)
 					{
 						bi2cToStm32.actiontype = GetReceiveBufferValue(1);
 						bi2cToStm32.adr = GetReceiveBufferValue(2);
 						bi2cToStm32.val = GetReceiveBufferValue(3);
+						__NOP();
+						uint8_t Merr = OSMboxPost(pMailStm32, (void *)&bi2cToStm32);
+						if(Merr == OS_ERR_NONE)
+						{
+								__NOP();
+						}
+						else
+						{
+								__NOP();
+								SendStr((int8_t*)"MBOX_ERR:bi2cToStm32 post\n");
+						}
 					}
           break;
         case 0:
@@ -103,7 +119,9 @@ void DMA1_Channel6_IRQHandler(void)
 					#ifdef ENABLE_TIME_MEAS
 					ClkCnt = OSTimeGet();
 					#endif
+				#ifdef ENABLE_I2C_PENDING
 					OSSemPost(pI2C);
+				#endif
 					__NOP();	
           break;
         case 0:
@@ -144,4 +162,10 @@ void I2C1_EV_IRQHandler(void)
 
 void I2C1_ER_IRQHandler(void)
 {
+	if(I2C_DMA_Body_ER_IRQHandler())
+	{
+		__NOP();
+	}
+	else
+		__NOP();
 }

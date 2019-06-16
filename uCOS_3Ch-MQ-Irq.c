@@ -113,8 +113,8 @@ s8    cBuf[16];         //  Буфер для строки результата
 s8*   pTx;              //  Указатель для передачи в обработчик адреса строки
 
 uint8_t * pTxFixLength;
-uint8_t pTxFixLengthCnt = 0;
-uint8_t pTxFixLength_i = 0;
+uint32_t pTxFixLengthCnt = 0;
+uint32_t pTxFixLength_i = 0;
 uint8_t ModeTx = 0;
 
 uint8_t SilenceMode = 1;
@@ -152,7 +152,7 @@ void Periph_Init(void);
 u16 FreeStkSpace(OS_STK * x);
 void SendStr(s8* ptr);          //  Функция запуска передачи
 
-void SendStrFixLen(uint8_t * ptr, uint8_t cnt);
+void SendStrFixLen(uint8_t * ptr, uint32_t cnt);
 
 void UART_init(void);
 void USART2_IRQHandler(void);
@@ -655,6 +655,7 @@ static void App_lsm303(void * p_arg)
         Val_lsm303.s1_status = 1;
         Val_lsm303.s2_status = 1;
       #endif
+				#ifdef ENABLE_LSM303_SEND
         if(flagSensDataRdy)
         {
             if (OSQPost(pEvSensorBuff, ((void*)(&Val_lsm303)))==OS_Q_FULL)
@@ -670,6 +671,7 @@ static void App_lsm303(void * p_arg)
                 SendStr((int8_t*)"OS_Q_CNTWRN:lsm303\n");
             }
         }
+				#endif
 		OSTimeDly(lsm303.TDiscr);
     }
 }
@@ -858,8 +860,13 @@ static void App_Messager(void * p_arg)
 
     OS_CPU_SR cpu_sr = 0;
     uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE + 4 + EXACTOLBIARRAYCNT];
-		const uint32_t Max_ExactoLBIdata2send = EXACTOLBIDATASIZE + EXACTOLBIARRAYCNT;
+		const uint32_t Max_ExactoLBIdata2send = EXACTOLBIDATASIZE + 4 + EXACTOLBIARRAYCNT;
     uint32_t Cnt_ExactoLBIdata2send = 0;
+		for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
+		{
+			ExactoLBIdata2send[i] = (uint8_t)i + 1;
+		}
+		Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
     
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
@@ -936,9 +943,9 @@ static void App_Messager(void * p_arg)
 						if(flags&FLG_TEST)
 						#endif
 						{
-							for (uint32_t i = 0; i < Max_ExactoLBIdata2send; i++)
+							for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
 							{
-								ExactoLBIdata2send[i+4] = i + 1;
+								ExactoLBIdata2send[i] = (uint8_t)CounterDelay + (uint8_t)i;
 							}
 							Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
 						}
@@ -966,9 +973,9 @@ static void App_Messager(void * p_arg)
 								#ifdef ENABLE_TIME_MEAS
 									OSTimeSet(0L);
 								#endif
-									ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
+									//ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
 									SendStr((s8*)"h");
-									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send + 4);
+									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
 									SendStr((int8_t*)"\n");
 							}
 							else{
@@ -1164,7 +1171,7 @@ void SendStr(s8* ptr) { //  Неплохо бы проверять параме�
 	ModeTx = 0;
   USART_ITConfig(USART2, USART_IT_TXE, ENABLE); //  разрешить запрос от Тх
 }
-void SendStrFixLen(uint8_t * ptr, uint8_t cnt)
+void SendStrFixLen(uint8_t * ptr, uint32_t cnt)
 {
     if(SilenceMode)
       return;

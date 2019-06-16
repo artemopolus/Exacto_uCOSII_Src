@@ -144,30 +144,34 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
 
 void SensorData2lsm303(SensorData * src)
 {
-		uint8_t i = 0, pData = ExactoBuffer.cnt_lsm303_xl;
+	#ifdef ENABLE_LSM303_SAVE
+		uint8_t i = 0;
+		
     if(src->s1_status)
     {
+			uint16_t pData = ExactoBuffer.cnt_lsm303_xl;
         if((pData + 6) > EXACTOLSM303SZ_XL)
         {
             ExactoBuffer.cnt_lsm303_xl = 0;
             pData = 0;
-					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
+					SendStr((int8_t*)"\nBUF_ERR:lsm303 xl\n");
         }
         for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303_xl[pData + i] = src->s1[i];
         ExactoBuffer.cnt_lsm303_xl += 6;
-    }
-		pData = ExactoBuffer.cnt_lsm303_m;
+    }	
     if(src->s2_status)
     {
+			uint8_t pData = ExactoBuffer.cnt_lsm303_m;
         if((ExactoBuffer.cnt_lsm303_m + 6) > EXACTOLSM303SZ_M)
         {
             ExactoBuffer.cnt_lsm303_m = 6;
             pData = 0;
-					SendStr((int8_t*)"\nBUF_ERR:lsm303\n");
+					SendStr((int8_t*)"\nBUF_ERR:lsm303 m\n");
         }
         for(i = 0; i < 6 ; i++) 	ExactoBuffer.lsm303_m[pData + i] = src->s2[i];
         ExactoBuffer.cnt_lsm303_m += 6;
     }
+		#endif
 }
 void SensorData2bmp280(SensorData * src)
 {
