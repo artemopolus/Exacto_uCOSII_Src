@@ -49,6 +49,12 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 			// 0100 11 0 0
 			trgG = 0x4c;
 			break;
+        case 1:
+            // 0111 01 0 0
+            //833 Hz
+            trgXL = 0x74;
+            // 0111 11 0 1
+            trgG = 0x7d;
 		default:
 			return 0;
 	}
@@ -62,15 +68,24 @@ uint8_t Exacto_setfrq_ism330(uint8_t mode)
 	{
 		switch(mode)
 		{
-				case 0:
-						OS_ENTER_CRITICAL()
-						ism330.TDiscr = OS_TIME_10mS;
-						ism330.MultSens1 = 1;
-						ism330.MultSens2 = 1;
-						ism330.MultSens3 = 1;
-						OS_EXIT_CRITICAL()
-						SendStr((int8_t*)"SETFREQ:ism330:10ms\n");
-						break;
+            case 0:
+                OS_ENTER_CRITICAL()
+                ism330.TDiscr = OS_TIME_10mS;
+                ism330.MultSens1 = 1;
+                ism330.MultSens2 = 1;
+                ism330.MultSens3 = 1;
+                OS_EXIT_CRITICAL()
+                SendStr((int8_t*)"SETFREQ:ism330:10ms\n");
+                break;
+            case 1:
+                OS_ENTER_CRITICAL()
+                ism330.TDiscr = OS_TIME_1m2S;
+                ism330.MultSens1 = 8;
+                ism330.MultSens2 = 1;
+                ism330.MultSens3 = 1;
+                OS_EXIT_CRITICAL()
+                SendStr((int8_t*)"SETFREQ:ism330:1.2ms\n");
+                break;
 		}
 		return 1;
 	}
@@ -156,14 +171,14 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
 		case 0:
             //0100 0100 -- 100 Hz
             trg = 0x44;
-						//0000 1100 -- 100 Hz
-						trgM = 0x0C;
+            //0000 1100 -- 100 Hz
+            trgM = 0x0C;
             break;
         case 1:
             // 800 Hz 1111 01 00
             trg = 0xF4;
-						//0000 1100 -- 100 Hz
-						trgM = 0x0C;
+            //0000 1100 -- 100 Hz
+            trgM = 0x0C;
             break;
         default:
             return 0;
@@ -181,16 +196,16 @@ uint8_t Exacto_setfrq_lsm303ah(uint8_t mode)
             case 0:
                 OS_ENTER_CRITICAL()
                 lsm303.TDiscr = OS_TIME_10mS;
-								lsm303.MultSens1 = 1;
-								lsm303.MultSens2 = 1;
+                lsm303.MultSens1 = 1;
+                lsm303.MultSens2 = 1;
                 OS_EXIT_CRITICAL()
                 SendStr((int8_t*)"SETFREQ:lsm303:10ms\n");
                 break;
             case 1:
                 OS_ENTER_CRITICAL()
-                lsm303.TDiscr = (INT16U)12; 
-								lsm303.MultSens1 = 1;
-								lsm303.MultSens2 = 8;
+                lsm303.TDiscr = OS_TIME_1m2S;
+                lsm303.MultSens1 = 1;
+                lsm303.MultSens2 = 8;
                 OS_EXIT_CRITICAL()
                 SendStr((int8_t*)"SETFREQ:lsm303:1.2ms\n");
                 break;

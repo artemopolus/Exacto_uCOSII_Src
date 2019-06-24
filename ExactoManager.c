@@ -338,9 +338,9 @@ void ExactoStm32ReportStates_Callback(uint8_t RegAdr)
 }
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr)
 {
-		uint8_t flgerr = 0;
-		OS_FLAGS tmp_flg;
-		OS_CPU_SR cpu_sr = 0;
+    uint8_t flgerr = 0;
+    OS_FLAGS tmp_flg;
+    OS_CPU_SR cpu_sr = 0;
     if(RegAdr >= CntExactoStm32States)
         return;
     ExactoStm32States[RegAdr] = RegVal;
@@ -416,24 +416,24 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                         uCOSFlagPost_Callback(perr);
                     }
                     break;
-								case DISABLE_UART_ESM:
-									OSFlagPost( pFlgSensors,
-																	FLG_UART,
-																	OS_FLAG_SET,
-																	perr);
-									break;
-								case DISABLE_I2C_ESM:
-									OSFlagPost( pFlgSensors,
-																	FLG_I2C,
-																	OS_FLAG_SET,
-																	perr);
-									break;
-								case ENABLE_TEST_ESM:
-									OSFlagPost( pFlgSensors,
-																	FLG_TEST,
-																	OS_FLAG_SET,
-																	perr);
-									break;
+				case DISABLE_UART_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_UART,
+                                            OS_FLAG_SET,
+                                            perr);
+                    break;
+				case DISABLE_I2C_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_I2C,
+                                            OS_FLAG_SET,
+                                            perr);
+                    break;
+                case ENABLE_TEST_ESM:
+                    OSFlagPost( pFlgSensors,
+                                            FLG_TEST,
+                                            OS_FLAG_SET,
+                                            perr);
+                    break;
             }
             break;
         case SENDFREQ_ES32A:
@@ -470,6 +470,33 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     SendStr((int8_t*)"SLFTST: success\n");
                 else
                     SendStr((int8_t*)"SLFTST: failed\n");
+            }
+            break;
+        case SET_SNSFRQ_MODE:
+            OSFlagPost( pFlgSensors,
+                        FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+                        OS_FLAG_CLR,
+                        &flgerr);
+            switch(RegVal)
+            {
+                case (0x00):        
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = OS_TIME_1mS;
+                    OS_EXIT_CRITICAL()
+                    if(Exacto_setfrq_ism330(0)&&Exacto_setfrq_lsm303ah(0))
+                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 0 success\n");
+                    else
+                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 0 failed\n");
+                    break;
+                case (0x01):
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = OS_TIME_100mS;
+                    OS_EXIT_CRITICAL()
+                    if(Exacto_setfrq_ism330(1)&&Exacto_setfrq_lsm303ah(1))
+                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 1 success\n");
+                    else
+                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 1 failed\n");
+                    break;
             }
             break;
     }

@@ -917,84 +917,84 @@ static void App_Messager(void * p_arg)
         }
         if(flags)
         {
-						if(CounterAppMessager > 1)
-						{
-							OS_ENTER_CRITICAL()
-							CounterAppMessager--;
-							OS_EXIT_CRITICAL()
-						} else if (CounterAppMessager == 1)
-						{
-							//stop all
-							ExactoStm32StatesChanged_Callback(0, 0, &err);
-							OS_ENTER_CRITICAL()
-							CounterAppMessager = 0;
-							OS_EXIT_CRITICAL()
-						}
+            if(CounterAppMessager > 1)
+            {
+                OS_ENTER_CRITICAL()
+                CounterAppMessager--;
+                OS_EXIT_CRITICAL()
+            } else if (CounterAppMessager == 1)
+            {
+                //stop all
+                ExactoStm32StatesChanged_Callback(0, 0, &err);
+                OS_ENTER_CRITICAL()
+                CounterAppMessager = 0;
+                OS_EXIT_CRITICAL()
+            }
+
             
-						
-						ExactoLBIdata2send[0] = (uint8_t)CounterDelay << 24;
-						ExactoLBIdata2send[1] = (uint8_t)CounterDelay << 16;
-						ExactoLBIdata2send[2] = (uint8_t)CounterDelay << 8;
-						ExactoLBIdata2send[3] = (uint8_t)CounterDelay;
-						
-						#ifdef ENABLE_TEST_MSG
-						if(1)
-						#else
-						if(flags&FLG_TEST)
-						#endif
-						{
-							for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
-							{
-								ExactoLBIdata2send[i] = (uint8_t)CounterDelay + (uint8_t)i;
-							}
-							Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
-						}
-						else{
-							#ifdef ENABLE_SAFE_CP2BUFFER
-							OSMutexPend(pBuffRdy,0,&errB);
-							Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
-							errB = OSMutexPost(pBuffRdy);
-							#endif
-							#ifdef ENABLE_CRITSEC_CP2BUFFER
-							OS_ENTER_CRITICAL()
-							Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send);
-							OS_EXIT_CRITICAL()
-							#endif
-						}
-						
-						
-						#ifdef UART_SEND_MSG
-						if(1)
-						#else
-						if(!(flags&FLG_UART))
-						#endif
-						{
-							if(Cnt_ExactoLBIdata2send > 3){
-								#ifdef ENABLE_TIME_MEAS
-									OSTimeSet(0L);
-								#endif
-									//ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
-									SendStr((s8*)"h");
-									SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
-									SendStr((int8_t*)"\n");
-							}
-							else{
-									SendStr((int8_t*)"No data in buffer\n");
-							}
-						}
-						#ifdef I2C_SEND_MSG
-						if(1)
-						#else
-						if(!(flags&FLG_I2C))
-						#endif
-						{
-							if( CheckTransmitBuffer())
-							{
-								SetData2transmit(ExactoLBIdata2send,Cnt_ExactoLBIdata2send + 4);
-								ReleaseTransmitBuffer();
-							}
-						}
-						OSTimeDly(BaseDelay);
+            ExactoLBIdata2send[0] = (uint8_t)CounterDelay << 24;
+            ExactoLBIdata2send[1] = (uint8_t)CounterDelay << 16;
+            ExactoLBIdata2send[2] = (uint8_t)CounterDelay << 8;
+            ExactoLBIdata2send[3] = (uint8_t)CounterDelay;
+            
+            #ifdef ENABLE_TEST_MSG
+            if(1)
+            #else
+            if(flags&FLG_TEST)
+            #endif
+            {
+                for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
+                {
+                    ExactoLBIdata2send[i] = (uint8_t)CounterDelay + (uint8_t)i;
+                }
+                Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
+            }
+            else{
+                #ifdef ENABLE_SAFE_CP2BUFFER
+                OSMutexPend(pBuffRdy,0,&errB);
+                Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
+                errB = OSMutexPost(pBuffRdy);
+                #endif
+                #ifdef ENABLE_CRITSEC_CP2BUFFER
+                OS_ENTER_CRITICAL()
+                Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send);
+                OS_EXIT_CRITICAL()
+                #endif
+            }
+            
+            
+            #ifdef UART_SEND_MSG
+            if(1)
+            #else
+            if(!(flags&FLG_UART))
+            #endif
+            {
+                if(Cnt_ExactoLBIdata2send > 3){
+                    #ifdef ENABLE_TIME_MEAS
+                        OSTimeSet(0L);
+                    #endif
+                        //ExactoLBIdata2send[Cnt_ExactoLBIdata2send] = '\0';
+                        SendStr((s8*)"h");
+                        SendStrFixLen(ExactoLBIdata2send,Cnt_ExactoLBIdata2send);
+                        SendStr((int8_t*)"\n");
+                }
+                else{
+                        SendStr((int8_t*)"No data in buffer\n");
+                }
+            }
+            #ifdef I2C_SEND_MSG
+            if(1)
+            #else
+            if(!(flags&FLG_I2C))
+            #endif
+            {
+                if( CheckTransmitBuffer())
+                {
+                    SetData2transmit(ExactoLBIdata2send,Cnt_ExactoLBIdata2send + 4);
+                    ReleaseTransmitBuffer();
+                }
+            }
+            OSTimeDly(BaseDelay);
         }
         else
         {
