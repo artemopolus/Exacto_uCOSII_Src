@@ -494,8 +494,12 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     OS_EXIT_CRITICAL()
                     if(Exacto_setfrq_ism330(1)&&Exacto_setfrq_lsm303ah(1))
                         SendStr((int8_t*)"SET_SNSFRQ_MODE: 1 success\n");
-                    else
-                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 1 failed\n");
+                    else{
+                        SendStr((int8_t*)"SET_SNSFRQ_MODE: 1 failed, return init freq\n");
+												OS_ENTER_CRITICAL()
+												BaseDelay = OS_TIME_1mS;
+												OS_EXIT_CRITICAL()
+										}
                     break;
             }
             break;
