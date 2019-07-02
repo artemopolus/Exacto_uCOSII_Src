@@ -859,8 +859,8 @@ static void App_Messager(void * p_arg)
     INT8U err;
 
     OS_CPU_SR cpu_sr = 0;
-    uint8_t ExactoLBIdata2send[EXACTOLBIDATASIZE + 4 + EXACTOLBIARRAYCNT];
-		const uint32_t Max_ExactoLBIdata2send = EXACTOLBIDATASIZE + 4 + EXACTOLBIARRAYCNT;
+    uint8_t ExactoLBIdata2send[MAXNBWORD2TRANSMIT];
+	const uint32_t Max_ExactoLBIdata2send = MAXNBWORD2TRANSMIT;
     uint32_t Cnt_ExactoLBIdata2send = 0;
 		for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
 		{
