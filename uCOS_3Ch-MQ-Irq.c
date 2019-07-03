@@ -181,6 +181,8 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 
+uint32_t ExactoStm32setConfig2buffer(uint8_t * dst, const uint32_t len);
+
 #ifdef ENABLE_I2C_SLAVE
 void Exacto_init_i2c_slave(void);
 void DMA1_Channel7_IRQHandler(void);
@@ -860,14 +862,14 @@ static void App_Messager(void * p_arg)
 
     OS_CPU_SR cpu_sr = 0;
     uint8_t ExactoLBIdata2send[MAXNBWORD2TRANSMIT];
-	const uint32_t Max_ExactoLBIdata2send = MAXNBWORD2TRANSMIT;
-    uint32_t Cnt_ExactoLBIdata2send = 0;
+		const uint32_t Max_ExactoLBIdata2send = MAXNBWORD2TRANSMIT;
+		uint32_t Cnt_ExactoLBIdata2send = 0;
 		for (uint32_t i = 4; i < Max_ExactoLBIdata2send; i++)
 		{
 			ExactoLBIdata2send[i] = (uint8_t)i + 1;
 		}
 		Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
-    
+		ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send);
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
     if(lsm303.Whoami)
@@ -998,7 +1000,21 @@ static void App_Messager(void * p_arg)
         }
         else
         {
-
+						OS_ENTER_CRITICAL()
+						uint32_t cnt = ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send);
+						OS_EXIT_CRITICAL()
+						#ifdef I2C_SEND_MSG
+            if(1)
+            #else
+            if(!(flags&FLG_I2C))
+            #endif
+            {
+                if( CheckTransmitBuffer())
+                {
+                    SetData2transmit(ExactoLBIdata2send,cnt);
+                    ReleaseTransmitBuffer();
+                }
+            }
             Dec_Convert((s8*)cBuf, CounterDelay); 
             SendStr((int8_t*)"Timer=");
             SendStr((int8_t*)&cBuf[6]);

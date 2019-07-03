@@ -65,6 +65,53 @@ char StringSensInfo[] = "Sensor = xxxxxx Freq = xxx Delay = xxxxxx \n";
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 void ExactoStm32ReportStates_Callback(uint8_t RegAdr);
 
+uint8_t ExactoSensorSet2array( ExactoSensorSet * src, uint8_t * dst)
+{
+	uint8_t index = 0;
+	dst[index++] = src->Whoami;
+	dst[index++] = src->flgSens;
+	dst[index++] = src->initFreq;
+	dst[index++] = src->MultSens1;
+	dst[index++] = src->MultSens2;
+	dst[index++] = src->MultSens3;
+	dst[index++] = (uint8_t)src->TDiscr << 8;
+	dst[index++] = (uint8_t)src->TDiscr;
+	return index;
+}
+
+uint32_t ExactoStm32setConfig2buffer(uint8_t * dst, const uint32_t len)
+{
+	uint32_t index = 0;
+	uint8_t devnum = 1;
+	dst[index++] = devnum++;
+	dst[index++] = (uint8_t)BaseDelay << 8;
+	dst[index++] = (uint8_t)BaseDelay;
+	dst[index++] = devnum++;
+	dst[index++] = (uint8_t)(MAXNBWORD2TRANSMIT << 8);
+	dst[index++] = (uint8_t) MAXNBWORD2TRANSMIT;
+	dst[index++] = devnum++;
+	index = ExactoSensorSet2array(&lsm303, &dst[index]);
+	dst[index++] = devnum++;
+	dst[index++] = (uint8_t)(EXACTOLSM303SZ_XL << 8);
+	dst[index++] = (uint8_t)(EXACTOLSM303SZ_XL);
+	dst[index++] = (uint8_t)(EXACTOLSM303SZ_M << 8);
+	dst[index++] = (uint8_t)(EXACTOLSM303SZ_M);
+	dst[index++] = devnum++;
+	index = ExactoSensorSet2array(&bmp280, &dst[index]);
+	dst[index++] = devnum++;
+	dst[index++] = (uint8_t) EXACTOBMP280SZ;
+	dst[index++] = devnum++;
+	index = ExactoSensorSet2array(&ism330, &dst[index]);
+	dst[index++] = devnum++;
+	dst[index++] = (uint8_t) (EXACTOISM330SZ_G << 8);
+	dst[index++] = (uint8_t) EXACTOISM330SZ_G;
+	dst[index++] = (uint8_t) (EXACTOISM330SZ_XL << 8);
+	dst[index++] = (uint8_t) EXACTOISM330SZ_XL;
+	dst[index++] = devnum ++;
+	dst[index++] = (uint8_t) EXACTOLBIARRAYCNT;
+	return index;
+}
+
 void uCOSFlagPost_Callback( uint8_t * perr)
 {
     switch(*perr)
@@ -350,30 +397,35 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             switch(RegVal)
             {
                 case ALLWAITING_ESM:
-                    OSFlagPost( pFlgSensors,
-                                            FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
-                                            OS_FLAG_CLR,
-                                            &flgerr);
-                    if(flgerr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: waiting\n");
-                    else
-                    {
+									OS_ENTER_CRITICAL()
+									BaseDelay = OS_TICKS_PER_SEC;
+									OS_EXIT_CRITICAL()
+                  OSFlagPost( pFlgSensors,
+																					FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+																					OS_FLAG_CLR,
+																					&flgerr);
+                  if(flgerr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: waiting\n");
+                  else{
                         SendStr((int8_t*)"SWITCH_ERR:ALLWAITING_ESM\n");
                         uCOSFlagPost_Callback(&flgerr);
-                    }
-                    break;
+                  }
+                  break;
                 case ONLYLSM303_ESM:
-                    OSFlagPost( pFlgSensors,
-                                            FLG_LSM303,
-                                            OS_FLAG_SET,
-                                            perr);
-                    if(*perr == OS_ERR_NONE) 
-												SendStr((int8_t*)"Switch to mode: only lsm303\n");
-                    else
-                    {
-                        SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
-                        uCOSFlagPost_Callback(perr);
-                    }
-                    break;
+									OS_ENTER_CRITICAL()
+									BaseDelay = OS_TIME_100mS;
+									OS_EXIT_CRITICAL()
+									OSFlagPost( pFlgSensors,
+																		FLG_LSM303,
+																		OS_FLAG_SET,
+																		perr);
+									if(*perr == OS_ERR_NONE) 
+											SendStr((int8_t*)"Switch to mode: only lsm303\n");
+									else
+									{
+											SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
+											uCOSFlagPost_Callback(perr);
+									}
+									break;
 								case CNTLSM303_ESM:
 									CounterAppMessager = 10;
 									OSFlagPost( pFlgSensors,
@@ -388,6 +440,24 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
 											uCOSFlagPost_Callback(perr);
 									}
 									break;
+								case ONLYLSM303_ESM_FST:
+									if(Exacto_setfrq_lsm303ah(1)){  
+										SendStr((int8_t*)"SET_FRQ_LSM303\n");
+										OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_10mS;
+										OS_EXIT_CRITICAL()
+										OSFlagPost( pFlgSensors,
+																		FLG_LSM303,
+																		OS_FLAG_SET,
+																		perr);
+										if(*perr == OS_ERR_NONE) 	SendStr((int8_t*)"Switch to mode: only lsm303\n");
+										else{
+											SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
+											uCOSFlagPost_Callback(perr);
+										}
+									}
+									else SendStr((int8_t*)"SET_ERR:lsm303\n");
+									break;
 								case ONLYBMP280_ESM:
 									OSFlagPost( pFlgSensors,
                                             FLG_BMP280,
@@ -401,21 +471,41 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             perr);
 									break;
                 case ALLRUNNING_ESM:
-									
-                    tmp_flg = OSFlagPost( pFlgSensors,
+									OS_ENTER_CRITICAL()
+									BaseDelay = OS_TIME_100mS;
+									OS_EXIT_CRITICAL()
+                  tmp_flg = OSFlagPost( pFlgSensors,
                                             FLG_LSM303 + FLG_BMP280 + FLG_ISM330,
                                             OS_FLAG_SET,
                                             perr);
 									if(tmp_flg != 0x07)
 										__NOP();
                     //OSSemPost(pSism330);
-                    if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
-                    else
-                    {
-                        SendStr((int8_t*)"SWITCH_ERR:ALLRUNNING_ESM\n");
-                        uCOSFlagPost_Callback(perr);
-                    }
-                    break;
+									if(*perr == OS_ERR_NONE) SendStr((int8_t*)"Switch to mode: all sensors\n");
+									else{
+											SendStr((int8_t*)"SWITCH_ERR:ALLRUNNING_ESM\n");
+											uCOSFlagPost_Callback(perr);
+									}
+									break;
+								case ALLRUNNING_ESM_FST:
+									if(Exacto_setfrq_lsm303ah(1)&&Exacto_setfrq_ism330(1))
+									{
+										SendStr((int8_t*)"SET_FRQ_LSM303_ISM330\n");
+										OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_10mS;
+										OS_EXIT_CRITICAL()
+										OSFlagPost( pFlgSensors,
+																		FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
+																		OS_FLAG_SET,
+																		perr);
+										if(*perr == OS_ERR_NONE) 	SendStr((int8_t*)"Switch to mode: all sensors\n");
+										else{
+											SendStr((int8_t*)"SWITCH_ERR:ALLRUNNING_ESM\n");
+											uCOSFlagPost_Callback(perr);
+										}
+									}
+									else SendStr((int8_t*)"SET_ERR:lsm303|ism330\n");
+									break;
 				case DISABLE_UART_ESM:
                     OSFlagPost( pFlgSensors,
                                             FLG_UART,
