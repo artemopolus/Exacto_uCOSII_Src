@@ -751,7 +751,7 @@ static void App_ism330(void * p_arg)
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
 //        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
 
-			flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
+			flValue = OSFlagPend(pFlgSensors,(OS_FLAGS)FLG_ISM330,OS_FLAG_WAIT_SET_ANY,1000,&error);
 			if(error == OS_ERR_NONE)
 			{
 				flagSensDataRdy = 0;
@@ -825,25 +825,24 @@ static void App_ism330(void * p_arg)
 							break;
 					}
 				}
-        if(flagSensDataRdy)
-        {
-            if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
-            {
-                __NOP();
-                SendStr((int8_t*)"OS_Q_FULL:ism330\n");
-            }
-            OSQQuery(pEvSensorBuff, &infSensorBuff);
-            cntSensorBuff = infSensorBuff.OSNMsgs;
-            if(CNTSENSORBUFFER==cntSensorBuff)
-            {
-                __NOP();
-                SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
-            }
-            //OSTimeDly(Parameters->TDiscr);
-        }
-    //else OSTimeDly(OS_TIME_1mS);
-				OSTimeDly(Parameters->TDiscr);
-		}
+                if(flagSensDataRdy)
+                {
+                    if (OSQPost(pEvSensorBuff, ((void*)(&Val_ism330)))==OS_Q_FULL)
+                    {
+                        __NOP();
+                        SendStr((int8_t*)"OS_Q_FULL:ism330\n");
+                    }
+                    OSQQuery(pEvSensorBuff, &infSensorBuff);
+                    cntSensorBuff = infSensorBuff.OSNMsgs;
+                    if(CNTSENSORBUFFER==cntSensorBuff)
+                    {
+                        __NOP();
+                        SendStr((int8_t*)"OS_Q_CNTWRN:ism330\n");
+                    }
+
+                }
+//				OSTimeDly(Parameters->TDiscr);
+		} 
 		OSTimeDly(Parameters->TDiscr);
     }
 }

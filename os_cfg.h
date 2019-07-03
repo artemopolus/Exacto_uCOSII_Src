@@ -40,7 +40,7 @@
                                        /* ... MUST NEVER be higher than 254!                           */
 
 #define OS_MAX_EVENTS             8    /* Max. number of event control blocks in your application      */
-#define OS_MAX_FLAGS              3    /* Max. number of Event Flag Groups    in your application      */
+#define OS_MAX_FLAGS              5    /* Max. number of Event Flag Groups    in your application      */
 #define OS_MAX_MEM_PART           0    /* Max. number of memory partitions                             */
 #define OS_MAX_QS                 2    /* Max. number of queue control blocks in your application      */
 #define OS_MAX_TASKS              10    /* Max. number of tasks in your application, MUST be >= 2       */
