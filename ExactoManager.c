@@ -424,6 +424,15 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                             uCOSFlagPost_Callback(perr);
                     }
                     break;
+                case ONLYBMP280_ESM:
+                    OS_ENTER_CRITICAL()
+                    BaseDelay = bmp280.TDiscr;
+                    OS_EXIT_CRITICAL()
+                    OSFlagPost( pFlgSensors,
+                                        FLG_BMP280,
+                                        OS_FLAG_SET,
+                                        perr);
+                    break;
                 case ONLYISM330_ESM:
                     OS_ENTER_CRITICAL()
                     BaseDelay = OS_TIME_100mS;
