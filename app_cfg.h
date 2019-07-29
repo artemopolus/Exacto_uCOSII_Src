@@ -55,8 +55,8 @@
 *                                            TASK STACK SIZES
 *                             Size of the task stacks (# of OS_STK entries)
 \*******************************************************************************************************/
-#define  APP_TASK_START_STK_SIZE        64
-#define  APP_TASK_STK_SIZE              64
+#define  APP_TASK_START_STK_SIZE        128
+#define  APP_TASK_STK_SIZE              128
 
 
 /*******************************************************************************************************\

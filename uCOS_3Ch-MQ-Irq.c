@@ -751,7 +751,7 @@ static void App_ism330(void * p_arg)
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
 //        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
 
-			flValue = OSFlagPend(pFlgSensors,(OS_FLAGS)FLG_ISM330,OS_FLAG_WAIT_SET_ANY,1000,&error);
+			flValue = OSFlagPend(pFlgSensors,(OS_FLAGS)FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
 			if(error == OS_ERR_NONE)
 			{
 				flagSensDataRdy = 0;
