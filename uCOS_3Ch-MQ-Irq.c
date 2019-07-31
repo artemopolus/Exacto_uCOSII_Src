@@ -34,9 +34,9 @@ ExactoBufferUint8Type ExBufLSM303;
 ExactoBufferUint8Type ExBufBMP280;
 ExactoBufferUint8Type ExBufISM330;
 
-volatile ExactoSensorSet lsm303;
-volatile ExactoSensorSet bmp280;
-volatile ExactoSensorSet ism330;
+ExactoSensorSet lsm303;
+ExactoSensorSet bmp280;
+ExactoSensorSet ism330;
 
 #ifdef ENABLE_TIME_MEAS
 
@@ -181,7 +181,7 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
 
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 
-uint32_t ExactoStm32setConfig2buffer(uint8_t * dst, const uint32_t len);
+
 
 #ifdef ENABLE_I2C_SLAVE
 void Exacto_init_i2c_slave(void);
@@ -868,7 +868,7 @@ static void App_Messager(void * p_arg)
 			ExactoLBIdata2send[i] = (uint8_t)i + 1;
 		}
 		Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
-		ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send);
+		ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send, BaseDelay, &lsm303, &bmp280,&ism330);
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
     if(lsm303.Whoami)
@@ -1000,7 +1000,7 @@ static void App_Messager(void * p_arg)
         else
         {
 						OS_ENTER_CRITICAL()
-						uint32_t cnt = ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send);
+						uint32_t cnt = ExactoStm32setConfig2buffer(ExactoLBIdata2send, Max_ExactoLBIdata2send, BaseDelay, &lsm303, &bmp280,&ism330);
 						OS_EXIT_CRITICAL()
 						#ifdef I2C_SEND_MSG
             if(1)

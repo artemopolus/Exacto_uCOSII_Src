@@ -26,9 +26,10 @@ extern ExactoBufferUint8Type ExBufLSM303;
 extern ExactoBufferUint8Type ExBufBMP280;
 extern ExactoBufferUint8Type ExBufISM330;
 
-extern INT16U BaseDelay;
+
 extern volatile uint32_t CounterAppMessager;
 
+extern INT16U BaseDelay;
 extern ExactoSensorSet lsm303;
 extern ExactoSensorSet bmp280;
 extern ExactoSensorSet ism330;
@@ -65,52 +66,9 @@ char StringSensInfo[] = "Sensor = xxxxxx Freq = xxx Delay = xxxxxx \n";
 void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t * perr);
 void ExactoStm32ReportStates_Callback(uint8_t RegAdr);
 
-uint8_t ExactoSensorSet2array( ExactoSensorSet * src, uint8_t * dst)
-{
-	uint8_t index = 0;
-	dst[index++] = src->Whoami;
-	dst[index++] = src->flgSens;
-	dst[index++] = src->initFreq;
-	dst[index++] = src->MultSens1;
-	dst[index++] = src->MultSens2;
-	dst[index++] = src->MultSens3;
-	dst[index++] = (uint8_t)src->TDiscr << 8;
-	dst[index++] = (uint8_t)src->TDiscr;
-	return index;
-}
 
-uint32_t ExactoStm32setConfig2buffer(uint8_t * dst, const uint32_t len)
-{
-	uint32_t index = 0;
-	uint8_t devnum = 1;
-	dst[index++] = devnum++;
-	dst[index++] = (uint8_t)BaseDelay << 8;
-	dst[index++] = (uint8_t)BaseDelay;
-	dst[index++] = devnum++;
-	dst[index++] = (uint8_t)(MAXNBWORD2TRANSMIT << 8);
-	dst[index++] = (uint8_t) MAXNBWORD2TRANSMIT;
-	dst[index++] = devnum++;
-	index = ExactoSensorSet2array(&lsm303, &dst[index]);
-	dst[index++] = devnum++;
-	dst[index++] = (uint8_t)(EXACTOLSM303SZ_XL << 8);
-	dst[index++] = (uint8_t)(EXACTOLSM303SZ_XL);
-	dst[index++] = (uint8_t)(EXACTOLSM303SZ_M << 8);
-	dst[index++] = (uint8_t)(EXACTOLSM303SZ_M);
-	dst[index++] = devnum++;
-	index = ExactoSensorSet2array(&bmp280, &dst[index]);
-	dst[index++] = devnum++;
-	dst[index++] = (uint8_t) EXACTOBMP280SZ;
-	dst[index++] = devnum++;
-	index = ExactoSensorSet2array(&ism330, &dst[index]);
-	dst[index++] = devnum++;
-	dst[index++] = (uint8_t) (EXACTOISM330SZ_G << 8);
-	dst[index++] = (uint8_t) EXACTOISM330SZ_G;
-	dst[index++] = (uint8_t) (EXACTOISM330SZ_XL << 8);
-	dst[index++] = (uint8_t) EXACTOISM330SZ_XL;
-	dst[index++] = devnum ++;
-	dst[index++] = (uint8_t) EXACTOLBIARRAYCNT;
-	return index;
-}
+
+
 
 void uCOSFlagPost_Callback( uint8_t * perr)
 {
