@@ -350,6 +350,9 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             switch(RegVal)
             {
                 case ALLWAITING_ESM:
+									OS_ENTER_CRITICAL()
+								BaseDelay = OS_TICKS_PER_SEC;
+								OS_EXIT_CRITICAL()
                     OSFlagPost( pFlgSensors,
                                             FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
                                             OS_FLAG_CLR,
