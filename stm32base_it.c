@@ -97,7 +97,7 @@ void DMA1_Channel7_IRQHandler(void)
 						else
 						{
 								__NOP();
-								SendStr((int8_t*)"MBOX_ERR:bi2cToStm32 post\n");
+								//SendStr((int8_t*)"MBOX_ERR:bi2cToStm32 post\n");
 						}
 					}
           break;
