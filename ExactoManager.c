@@ -351,8 +351,8 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
             {
                 case ALLWAITING_ESM:
 									OS_ENTER_CRITICAL()
-								BaseDelay = OS_TICKS_PER_SEC;
-								OS_EXIT_CRITICAL()
+									BaseDelay = OS_TICKS_PER_SEC;
+									OS_EXIT_CRITICAL()
                     OSFlagPost( pFlgSensors,
                                             FLG_LSM303 | FLG_BMP280 | FLG_ISM330,
                                             OS_FLAG_CLR,
@@ -365,7 +365,26 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     }
                     break;
                 case ONLYLSM303_ESM:
-                    OSFlagPost( pFlgSensors,
+                    OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_100mS;
+										OS_EXIT_CRITICAL()
+										OSFlagPost( pFlgSensors,
+                                            FLG_LSM303,
+                                            OS_FLAG_SET,
+                                            perr);
+                    if(*perr == OS_ERR_NONE) 
+												SendStr((int8_t*)"Switch to mode: only lsm303\n");
+                    else
+                    {
+                        SendStr((int8_t*)"SWITCH_ERR:ONLYLSM303_ESM\n");
+                        uCOSFlagPost_Callback(perr);
+                    }
+                    break;
+								case ONLYLSM303_ESM_FST:
+										OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_10mS;
+										OS_EXIT_CRITICAL()
+										OSFlagPost( pFlgSensors,
                                             FLG_LSM303,
                                             OS_FLAG_SET,
                                             perr);
@@ -404,7 +423,9 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                                             perr);
 									break;
                 case ALLRUNNING_ESM:
-									
+										OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_100mS;
+										OS_EXIT_CRITICAL()
                     tmp_flg = OSFlagPost( pFlgSensors,
                                             FLG_LSM303 + FLG_BMP280 + FLG_ISM330,
                                             OS_FLAG_SET,
@@ -419,7 +440,16 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                         uCOSFlagPost_Callback(perr);
                     }
                     break;
-				case DISABLE_UART_ESM:
+								case ALLRUNNING_ESM_FST:
+										OS_ENTER_CRITICAL()
+										BaseDelay = OS_TIME_10mS;
+										OS_EXIT_CRITICAL()
+                    tmp_flg = OSFlagPost( pFlgSensors,
+                                            FLG_LSM303 + FLG_BMP280 + FLG_ISM330,
+                                            OS_FLAG_SET,
+                                            perr);
+										break;
+								case DISABLE_UART_ESM:
                     OSFlagPost( pFlgSensors,
                                             FLG_UART,
                                             OS_FLAG_SET,
