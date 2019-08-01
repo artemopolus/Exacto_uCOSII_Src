@@ -34,9 +34,9 @@ ExactoBufferUint8Type ExBufLSM303;
 ExactoBufferUint8Type ExBufBMP280;
 ExactoBufferUint8Type ExBufISM330;
 
-volatile ExactoSensorSet lsm303;
-volatile ExactoSensorSet bmp280;
-volatile ExactoSensorSet ism330;
+ExactoSensorSet lsm303;
+ExactoSensorSet bmp280;
+ExactoSensorSet ism330;
 
 #ifdef ENABLE_TIME_MEAS
 
@@ -733,7 +733,7 @@ static void App_ism330(void * p_arg)
     OS_CPU_SR cpu_sr = 0;
     uint8_t error;
 //    uint8_t ready = 0;
-    OS_FLAGS flValue;
+//    OS_FLAGS flValue;
     SensorData  Val_ism330;
     Val_ism330.pSensor = FLG_ISM330;
 	
@@ -749,7 +749,7 @@ static void App_ism330(void * p_arg)
 //        flValue = OSFlagPend(pFlgSensors,0x04,OS_FLAG_WAIT_SET_ALL,0,&error);
 //        if(!flValue)    SendStr((int8_t*)"RTNFLGPendERR:ism330\n");
 
-			flValue = OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
+			OSFlagPend(pFlgSensors,FLG_ISM330,OS_FLAG_WAIT_SET_ANY,0,&error);
 			if(error == OS_ERR_NONE)
 			{
 				flagSensDataRdy = 0;
@@ -867,7 +867,7 @@ static void App_Messager(void * p_arg)
 			ExactoLBIdata2send[i] = (uint8_t)i + 1;
 		}
 		Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
-    
+    ExactoStm32setConfig2buffer(ExactoLBIdata2send,Cnt_ExactoLBIdata2send,BaseDelay,&lsm303,&bmp280,&ism330);
     
     SendStr((int8_t*)"APP_MSG:start messaging\n");
     if(lsm303.Whoami)
@@ -948,6 +948,7 @@ static void App_Messager(void * p_arg)
                     ExactoLBIdata2send[i] = (uint8_t)CounterDelay + (uint8_t)i;
                 }
                 Cnt_ExactoLBIdata2send = Max_ExactoLBIdata2send;
+								ExactoStm32setConfig2buffer(ExactoLBIdata2send,Cnt_ExactoLBIdata2send,BaseDelay,&lsm303,&bmp280,&ism330);
             }
             else{
                 #ifdef ENABLE_SAFE_CP2BUFFER
