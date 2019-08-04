@@ -366,7 +366,7 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     break;
                 case ONLYLSM303_ESM:
                     OS_ENTER_CRITICAL()
-										BaseDelay = OS_TIME_100mS;
+										BaseDelay = OS_TICKS_PER_SEC;
 										OS_EXIT_CRITICAL()
 										OSFlagPost( pFlgSensors,
                                             FLG_LSM303,
@@ -548,10 +548,11 @@ void        App_buffer(void * p_arg)
 	ExactoLBIdataCLR(&ExactoBuffer);
     while(DEF_TRUE)
     {
-        ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
-        #ifdef ENABLE_SAFE_CP2BUFFER
+				#ifdef ENABLE_SAFE_CP2BUFFER
 				OSMutexPend(pBuffRdy,0,&errB);
 				#endif
+        ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
+
 				if(err == OS_ERR_NONE)
         {
             switch(ValInput->pSensor)

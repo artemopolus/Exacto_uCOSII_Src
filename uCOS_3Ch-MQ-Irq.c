@@ -957,9 +957,10 @@ static void App_Messager(void * p_arg)
                 errB = OSMutexPost(pBuffRdy);
                 #endif
                 #ifdef ENABLE_CRITSEC_CP2BUFFER
-                OS_ENTER_CRITICAL()
-                Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send);
-                OS_EXIT_CRITICAL()
+							//have problem with i2c dma interrupt: freeze, not responding
+									OS_ENTER_CRITICAL()
+									Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send);
+									OS_EXIT_CRITICAL()
                 #endif
             }
             
