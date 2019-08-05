@@ -542,9 +542,9 @@ void        App_buffer(void * p_arg)
 {
     SensorData * ValInput;
 	uint8_t err;
-		#ifdef ENABLE_SAFE_CP2BUFFER
-		uint8_t errB;
-		#endif
+    #ifdef ENABLE_SAFE_CP2BUFFER
+    uint8_t errB;
+    #endif
 	ExactoLBIdataCLR(&ExactoBuffer);
     while(DEF_TRUE)
     {
@@ -558,56 +558,43 @@ void        App_buffer(void * p_arg)
             switch(ValInput->pSensor)
             {
                 case FLG_LSM303:
-                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.lsm303, &ExactoBuffer.cnt_lsm303);
-										SensorData2lsm303(ValInput);
+                    SensorData2lsm303(ValInput);
                     break;
                 case FLG_BMP280:
-                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.bmp280, &ExactoBuffer.cnt_bmp280);
-										SensorData2bmp280(ValInput);
+                    SensorData2bmp280(ValInput);
                     break;
                 case FLG_ISM330:
-                    //SetData2exactoLBIdata(ValInput->s1, ExactoBuffer.ism330, &ExactoBuffer.cnt_ism330);
-										SensorData2ism330(ValInput);
+                    SensorData2ism330(ValInput);
                     break;
             }
-//            if((ExactoBuffer.cnt_lsm303       ==     (EXACTOLBIDATASIZE - 1))
-//                ||(ExactoBuffer.cnt_bmp280    ==     (EXACTOLBIDATASIZE - 1))
-//                ||(ExactoBuffer.cnt_ism330    ==     (EXACTOLBIDATASIZE - 1)))
-//            {
-//                ExactoLBIdataCLR(&ExactoBuffer);
-//                SendStr((int8_t*)"AP_BUFF:FORCE_BUFFER_CLR\n");
-//            }
         }
         else
         {
             switch(err)
-						{
-							case OS_ERR_TIMEOUT:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_TIMEOUT\n");
-								break;
-							case OS_ERR_PEND_ABORT:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ABORT\n");
-								break;
-											case OS_ERR_EVENT_TYPE:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_EVENT_TYPE\n");
-								break;
-											case OS_ERR_PEVENT_NULL:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEVENT_NULL\n");
-								break;
-											case OS_ERR_PEND_ISR:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ISR\n");
-								break;
-											case OS_ERR_PEND_LOCKED:
-													SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_LOCKED\n");
-								break;
-						}
+			{
+				case OS_ERR_TIMEOUT:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_TIMEOUT\n");
+					break;
+				case OS_ERR_PEND_ABORT:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ABORT\n");
+					break;
+				case OS_ERR_EVENT_TYPE:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_EVENT_TYPE\n");
+					break;
+				case OS_ERR_PEVENT_NULL:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_PEVENT_NULL\n");
+					break;
+				case OS_ERR_PEND_ISR:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_ISR\n");
+					break;
+				case OS_ERR_PEND_LOCKED:
+					SendStr((int8_t*)"AP_BUFF:OS_ERR_PEND_LOCKED\n");
+					break;
+			}
         }
-				#ifdef ENABLE_SAFE_CP2BUFFER
-					errB = OSMutexPost(pBuffRdy);
-				#endif
-//        if(ExactoLBIdataCLR(&buffer))
-//        {
-//            __NOP();
-//        }
+    #ifdef ENABLE_SAFE_CP2BUFFER
+        errB = OSMutexPost(pBuffRdy);
+    #endif
+
     }
 }
