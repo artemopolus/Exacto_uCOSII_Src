@@ -953,7 +953,7 @@ static void App_Messager(void * p_arg)
             else{
                 #ifdef ENABLE_SAFE_CP2BUFFER
                 OSMutexPend(pBuffRdy,0,&errB);
-                Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, ExactoLBIdata2send, Max_ExactoLBIdata2send);
+                Cnt_ExactoLBIdata2send = ExactoLBIdata2arrayUint8(& ExactoBuffer, &ExactoLBIdata2send[4], Max_ExactoLBIdata2send); 
                 errB = OSMutexPost(pBuffRdy);
                 #endif
                 #ifdef ENABLE_CRITSEC_CP2BUFFER
