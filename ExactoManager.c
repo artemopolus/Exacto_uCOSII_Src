@@ -548,12 +548,12 @@ void        App_buffer(void * p_arg)
 	ExactoLBIdataCLR(&ExactoBuffer);
     while(DEF_TRUE)
     {
-				#ifdef ENABLE_SAFE_CP2BUFFER
-				OSMutexPend(pBuffRdy,0,&errB);
-				#endif
+        #ifdef ENABLE_SAFE_CP2BUFFER
+        OSMutexPend(pBuffRdy,0,&errB);
+        #endif
         ValInput = (SensorData*)OSQPend(pEvSensorBuff,0,&err);
 
-				if(err == OS_ERR_NONE)
+		if(err == OS_ERR_NONE)
         {
             switch(ValInput->pSensor)
             {

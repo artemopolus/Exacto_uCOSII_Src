@@ -345,7 +345,7 @@ static  void  App_TaskStart (void *p_arg)
 				__NOP();
 		}
     #ifdef ENABLE_SAFE_CP2BUFFER
-    pBuffRdy = OSMutexCreate(19,&errorParser);
+    pBuffRdy = OSMutexCreate(MUT_MEAS_BUFFER,&errorParser);
     switch(errorParser)
     {
         case OS_ERR_NONE:
