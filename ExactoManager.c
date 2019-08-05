@@ -367,7 +367,7 @@ void ExactoStm32StatesChanged_Callback(uint8_t RegAdr, uint8_t RegVal, uint8_t *
                     break;
                 case ONLYLSM303_ESM:
                     OS_ENTER_CRITICAL()
-										BaseDelay = OS_TICKS_PER_SEC;
+										BaseDelay = OS_TICKS_PER_SEC/2;
 										OS_EXIT_CRITICAL()
 										OSFlagPost( pFlgSensors,
                                             FLG_LSM303,
