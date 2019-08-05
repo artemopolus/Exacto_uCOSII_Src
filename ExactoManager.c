@@ -129,7 +129,8 @@ uint32_t ExactoLBIdata2arrayUint8(ExactoLBIdata * src, uint8_t * dst, const uint
 	
 		//uint8_t allcount = (src->cnt_bmp280 + src->cnt_ism330 + src->cnt_lsm303 + 3);
     ExactoLBIdataCLR(src);
-    return allcount;
+//    return allcount;
+	return dstlen;
 }
 
 //void SetData2exactoLBIdata(uint8_t * src, uint8_t * dst, uint8_t * ptr)

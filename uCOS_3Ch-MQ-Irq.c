@@ -304,6 +304,7 @@ static  void  App_TaskStart (void *p_arg)
     BSP_IntVectSet(BSP_INT_ID_I2C1_ER, I2C1_ER_IRQHandler);
     BSP_IntVectSet(BSP_INT_ID_DMA1_CH7, DMA1_Channel7_IRQHandler);
     BSP_IntVectSet(BSP_INT_ID_DMA1_CH6, DMA1_Channel6_IRQHandler);
+		BSP_IntPrioSet(BSP_INT_ID_I2C1_EV,0);
     #endif
     
                 //  Устанка псевдовектора, имя обработчика задал прикладной программист
